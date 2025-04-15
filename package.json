@@ -17,6 +17,9 @@
     "jwt-decode": "^4.0.0",
     "mysql2": "^3.14.0",
     "nodemon": "^3.1.9",
-    "sequelize": "^6.37.7"
+    "sequelize": "^6.37.7",
+    "swagger": "^0.7.5",
+    "swagger-jsdoc": "^6.2.8",
+    "swagger-ui-express": "^5.0.1"
   }
 }

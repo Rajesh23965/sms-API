@@ -1,3 +1,4 @@
+//index.js
 const dbConfig = require("../config/db.js");
 const { Sequelize, DataTypes } = require("sequelize");
 
