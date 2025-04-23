@@ -43,10 +43,11 @@ const loadStudentForm = async (req, res) => {
 };
 
 const addOrUpdateStudent = async (req, res) => {
+  let redirectURL;
   try {
     const studentData = req.body;
     const studentId = req.query.studentId;
-    const redirectURL = studentId
+    redirectURL = studentId
       ? `/students/student-form?studentId=${studentId}`
       : "/students/student-form";
 
@@ -140,8 +141,31 @@ const loadStudentList = async (req, res) => {
   }
 };
 
+
+const deleteStudent = async (req, res) => {
+  try {
+    const id = req.params.id;
+    const studentData = await Student.findByPk(id);
+    if (!studentData) {
+      req.session.error = "Student record not found";
+      return res.redirect("/classes/class-form");
+    }
+
+    await studentData.destroy();
+    req.session.success = "Student Record Deleted Successfully";
+    return res.redirect("/classes/class-form");
+  } catch (error) {
+    console.error("Error deleting class:", error);
+    req.session.errorFields = ["first_name"];
+    req.session.oldInput = req.body;
+    req.session.error = "Internal server error";
+    return res.redirect("/students/student-list");
+  }
+};
+
 module.exports = {
   addOrUpdateStudent,
   loadStudentForm,
   loadStudentList,
+  deleteStudent
 };

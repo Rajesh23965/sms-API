@@ -20,9 +20,10 @@ const upload = multer({ storage });
 
 const District = db.district;
 const Vdc = db.vdc;
+const Section=db.sections;
 router.get("/student-form", studentController.loadStudentForm);
 router.get("/student-list", studentController.loadStudentList);
-
+router.get("/delete-class/:id", studentController.deleteStudent);
 router.post(
   "/api/students",
   upload.single("image"),
@@ -51,6 +52,18 @@ router.get("/get-vdcs/:districtId", async (req, res) => {
   } catch (error) {
     console.error("Error fetching vdcs:", error);
     res.status(500).json({ message: "Failed to fetch vdcs" });
+  }
+});
+
+router.get("/get-sections/:classId", async (req, res) => {
+  try {
+    const sections = await Section.findAll({
+      where: { classId: req.params.classId },
+    });
+    res.json(sections);
+  } catch (error) {
+    console.error("Error fetching sections:", error);
+    res.status(500).json({ message: "Failed to fetch section" });
   }
 });
 

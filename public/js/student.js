@@ -37,4 +37,30 @@ document.addEventListener("DOMContentLoaded", function () {
       sidebar.classList.toggle("collapsed");
     });
   }
+  document.getElementById('class-select').addEventListener('change', async function () {
+    const classId = this.value;
+    const sectionSelect = document.getElementById('section-select');
+    
+    // Clear previous options
+    sectionSelect.innerHTML = '<option value="">-- Select Section --</option>';
+
+    if (!classId) return;
+
+    try {
+      const response = await fetch(`/get-sections/${classId}`);
+      const data = await response.json();
+
+      if (data.success) {
+        data.sections.forEach(section => {
+          const option = document.createElement('option');
+          option.value = section.id;
+          option.textContent = section.section_name;
+          sectionSelect.appendChild(option);
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching sections:', error);
+    }
+  });
+
 });

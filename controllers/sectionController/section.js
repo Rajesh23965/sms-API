@@ -57,9 +57,8 @@ const addorupdateSection = async (req, res) => {
 
   // res.send(newClassId);
 
-  const redirectURL = newClassId
-    ? `/sections/section-form?classID=${newClassId}`
-    : "/sections/section-form";
+  const redirectURL = `/sections/section-form`;
+
 
   // Normalize sectionNames to always be an array
   if (!Array.isArray(sectionNames)) {
@@ -75,15 +74,25 @@ const addorupdateSection = async (req, res) => {
   sectionNames.forEach((name, index) => {
     if (!name || name.trim() === "") {
       missingFields.push(`section_name_${index}`);
+    } else {
+      const isValid = /^[a-zA-Z0-9\s]+$/.test(name.trim());
+      if (!isValid) {
+        missingFields.push(`invalid_section_name${index}`);
+      }
     }
   });
 
   if (missingFields.length) {
     req.flash("errorFields", missingFields);
     req.flash("oldInput", sectionData);
-    req.flash("error", "All fields are required.");
+    const hasInvalid = missingFields.some(field => field.startsWith("invalid_section_name"));
+    const errorMessage = hasInvalid
+      ? "Section names must not contain special characters."
+      : "All fields are required.";
+    req.flash("error", errorMessage);
     return res.redirect(redirectURL);
   }
+
 
   try {
     const cleanedNames = sectionNames.map((name) => name.trim());
@@ -96,6 +105,7 @@ const addorupdateSection = async (req, res) => {
       const existingSections = await Section.findAll({
         where: { class_id: newClassId },
       });
+
 
       const existingNames = existingSections.map((s) => s.section_name);
       console.log("Existing Section Names:", existingNames); // Check if existing sections are fetched

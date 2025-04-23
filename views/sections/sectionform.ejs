@@ -10,11 +10,12 @@
 
         <div class="card-body p-2 border">
           <% if (success) { %>
-            <div class="alert alert-success"><%= success %></div>
+            <div class="alert alert-success alert-dismissible fade show" role="alert"><%= success %>     <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
           <% } %>
 
           <% if (error) { %>
-            <div class="alert alert-danger"><%= error %></div>
+            <div class="alert alert-danger alert-dismissible fade show" role="alert"><%= error %> <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button></div>
           <% } %>
 
           <div class="card-header mb-3 bg-danger text-light">
@@ -97,23 +98,22 @@
                     <thead class="table-light">
                       <tr>
                         <th>S.N</th>
-                        <th>Class Name</th>
+                        <th>C.Name</th>
                         <th>Sections</th>
                         <th>Action</th>
                       </tr>
                     </thead>
                     <tbody>
+                      
                       <% classWithSections.forEach((classItem, index) => { %>
                         <tr>
-                          <td><%= index + 1 %></td>
+                          <td><%= index+1%></td>
                           <td><%= classItem.class_name %></td>
                           <td>
                             <% if (classItem.sections?.length) { %>
                               <ul class="list-unstyled d-flex flex-wrap gap-2">
-                                <% classItem.sections.forEach(section => { %>
-                                  <li><%= section.section_name %></li>
-                                <% }) %>
-                              </ul>
+                               <%= classItem.sections.map(section => section.section_name).join(', ') %>
+                            </ul>
                             <% } else { %>
                               <span>No sections available</span>
                             <% } %>
