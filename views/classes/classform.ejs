@@ -12,16 +12,16 @@
           <% if (success) { %>
             <div class="alert alert-success"><%= success %></div>
           <% } %>
-          <% if (error) { %>
+          <% if (error !='') { %>
             <div class="alert alert-danger"><%= error %></div>
           <% } %>
 
-          <div class="card-header mb-3 bg-danger text-light">
+          <div class="card-header mb-1 bg-danger text-light">
             <h5>Class Details</h5>
           </div>
 
           <div class="row">
-            <div class="col-md-6">
+            <div class="col-md-6 p-0 m-0">
               <form action="/classes/api/classes<%= studentclassById ? '?classId=' + studentclassById.id : '' %>" method="POST">
                 <div class="border p-3 bg-body-tertiary">
                   <div class="mb-3">
@@ -45,8 +45,8 @@
               </form>
             </div>
 
-            <div class="col-md-6">
-              <div class="table-responsive bg-body-secondary p-2 rounded">
+            <div class="col-md-6 p-0 m-0">
+              <div class="table-responsive bg-body-secondary">
                 <table class="table table-bordered table-hover">
                   <thead class="table-light">
                     <tr>

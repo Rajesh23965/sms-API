@@ -4,11 +4,13 @@ const StudentClass = db.classes;
 const loadClassForm = async (req, res) => {
   const studentClassId = req.query.classId;
   const errorFields = req.session.errorFields || [];
+  const error = req.session.error || [];
   const oldInput = req.session.oldInput || {};
   const success = req.session.success || "";
   req.session.errorFields = null;
   req.session.oldInput = null;
   req.session.success = null;
+  req.session.error = null;
 
   const studentclassById = studentClassId
     ? await StudentClass.findByPk(studentClassId)
@@ -21,6 +23,7 @@ const loadClassForm = async (req, res) => {
     classlist,
     studentclassById,
     success,
+    error,
   });
 };
 
@@ -41,6 +44,7 @@ const addorupdateClass = async (req, res) => {
       (!studentClassId || classExists.id !== parseInt(studentClassId))
     ) {
       req.session.errorFields = ["class_name"];
+      req.session.error = "Class already exist";
       req.session.oldInput = classData;
       return res.redirect(redirectURL);
     }

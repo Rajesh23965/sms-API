@@ -13,10 +13,32 @@
 
 body {
   display: flex;
-  background: #f5f7fb;
   color: #333;
   min-height: 100vh;
-  transition: background var(--transition);
+  background: linear-gradient(
+    135deg,
+    #667eea68,
+    #764ba270,
+    #01939570,
+    #016aac71
+  );
+  background-size: 400% 400%;
+  animation: gradientBG 50s ease infinite;
+}
+.row {
+  margin: 0px !important;
+}
+
+@keyframes gradientBG {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
 }
 
 .cursor-pointer {
@@ -44,12 +66,13 @@ input::placeholder {
 
 .sidebar {
   width: var(--sidebar-width);
-  background: #1e1e2f;
   color: white;
   display: flex;
   flex-direction: column;
   transition: width var(--transition);
   overflow: hidden;
+  background: linear-gradient(135deg, #1a1b1d, #453258f7, #181817, #0c0118);
+  animation: gradientBG 50s ease infinite;
 }
 
 .sidebar.collapsed {
@@ -66,7 +89,7 @@ input::placeholder {
   justify-content: start;
   gap: 10px;
   transition: all var(--transition);
-  background: #252535;
+  background: #2525356e;
   padding: 20px;
 }
 
@@ -81,7 +104,7 @@ input::placeholder {
 }
 
 .sidebar a {
-  color: #828181;
+  color: #959595;
   text-decoration: none;
   margin: 5px 0;
   display: flex;
@@ -126,7 +149,7 @@ input::placeholder {
   justify-content: space-between;
   align-items: center;
   padding: 16px;
-  background: #f0f2f4;
+  background: #aea1c7;
 }
 
 .header h1 {
@@ -159,7 +182,7 @@ input::placeholder {
 }
 
 .card {
-  background: white;
+  background: #aea1c7;
   border-radius: 16px;
   padding: 20px;
   box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
@@ -211,7 +234,7 @@ input::placeholder {
   width: 100%;
   height: 100%;
   background: rgba(0, 0, 0, 0.5);
-  display: none; /* Hidden by default */
+  display: none;
   justify-content: center;
   align-items: center;
   z-index: 9999;

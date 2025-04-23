@@ -5,6 +5,9 @@ module.exports = (sequelize, DataTypes) => {
       section_name: DataTypes.STRING(10),
     },
     {
+      class_id: DataTypes.INTEGER,
+    },
+    {
       timestamps: true,
       tableName: "sections",
     }
