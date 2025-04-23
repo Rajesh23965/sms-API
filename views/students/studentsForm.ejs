@@ -1,0 +1,220 @@
+<%- include('../layouts/header') %>
+
+<div class="">
+  <div class="row justify-content-center">
+    <div class="col-lg-12">
+      <div class="card shadow-lg rounded-0">
+        <div class="card-header bg-dark-subtle text-capitalize  d-flex flex-row justify-content-between align-items-center">
+          <a class="btn btn-danger rounded-1 shadow" href="/students/student-list">Student List</a>
+          <h3><i class="fas fa-user-graduate me-2"></i>Student Registration Form</h3>
+        </div>
+        <div class="card-body p-2 border">
+         
+
+          <% if (success && typeof success === 'string' && success.trim() !== '') { %>
+            <div class="alert alert-success"><%= success %></div>
+          <% } %>
+          
+          <form class="p-2" action="/students/api/students<%= studentId ? '?studentId=' + studentId : '' %>" method="POST" enctype="multipart/form-data">
+
+            <div class="card-header mb-3 border bg-opacity-100 bg-danger text-light">
+              <h3>Student Details</h3>
+            </div>
+            <div class="row mb-3 border p-3 m-0 bg-body-tertiary">
+              <div class="col-md-4 mb-3">
+                <label class="form-label">First Name</label>
+                <input type="text" name="first_name" class="form-control <%= errorFields.includes('first_name') ? 'is-invalid' : '' %>" value="<%= oldInput?.first_name || student?.first_name || '' %>"  placeholder="Enter First Name"/>
+              </div>
+              <div class="col-md-4 mb-3">
+                <label class="form-label">Middle Name</label>
+                <input type="text" name="middle_name" class="form-control <%= errorFields.includes('middle_name') ? 'is-invalid' : '' %>" value="<%= oldInput?.middle_name || student?.middle_name || '' %>" placeholder="Enter Middle Name" />
+              </div>
+              <div class="col-md-4 mb-3">
+                <label class="form-label">Last Name</label>
+                <input type="text" name="last_name" class="form-control <%= errorFields.includes('last_name') ? 'is-invalid' : '' %>" value="<%= oldInput?.last_name || student?.last_name || '' %>" placeholder="Enter Last Name" />
+              </div>
+           
+              <div class="col-md-3 mb-3">
+                <label class="form-label">Gender</label>
+                <select class="form-select <%= errorFields.includes('gender') ? 'is-invalid' : '' %>" name="gender">
+                  <option disabled selected hidden>-- Select Gender --</option>
+                  <option value="Male" <%= oldInput?.gender === 'Male' || student?.gender === 'Male' ? 'selected' : '' %>>Male</option>
+                  <option value="Female" <%= oldInput?.gender === 'Female' || student?.gender === 'Female' ? 'selected' : '' %>>Female</option>
+                  <option value="Other" <%= oldInput?.gender === 'Other' || student?.gender === 'Other' ? 'selected' : '' %>>Other</option>
+                </select>
+              </div>
+              <div class="col-md-3 mb-3">
+                <label class="form-label">Date of Birth</label>
+                <input type="date" name="dob" class="form-control <%= errorFields.includes('dob') ? 'is-invalid' : '' %>" value="<%= oldInput?.dob || student?.dob %>" placeholder="Enter Date of Birth" />
+              </div>
+              <div class="col-md-3 mb-3">
+                <label class="form-label">Contact Number</label>
+                <input type="text" name="phone" class="form-control <%= errorFields.includes('phone') ? 'is-invalid' : '' %>" value="<%= oldInput?.phone || student?.phone %>" placeholder="Enter Contact Number" />
+              </div>
+              <div class="col-md-3 mb-3">
+                <label class="form-label">Email</label>
+                <input type="email" name="email" class="form-control <%= errorFields.includes('email') ? 'is-invalid' : '' %>" value="<%= oldInput?.email || student?.email %>" placeholder="Enter Email Address" />
+              </div>
+              <div class="col-md-3 mb-3">
+                <label class="form-label">Class</label>
+                <select class="form-select <%= errorFields.includes('class_id') ? 'is-invalid' : '' %>" name="class_id">
+                  <option disabled selected hidden>--select class--</option>
+                  <% classes.forEach(function(cls) { %>
+                    <option value="<%= cls.id %>" <%= (oldInput?.class_id == cls.id || student?.class_id == cls.id) ? 'selected' : '' %>><%= cls.class_name %></option>
+                  <% }); %>                 
+                </select>
+                
+              </div>
+              <div class="col-md-3 mb-3">
+                <label class="form-label">Section</label>
+                <select class="form-select <%= errorFields.includes('section_id') ? 'is-invalid' : '' %>" name="section_id">
+                  <option disabled selected hidden>--select section--</option>
+                  <% sections.forEach(function(section) { %>
+                    <option value="<%= section.id %>" <%= (oldInput?.section_id == section.id || student?.section_id == section.id) ? 'selected' : '' %>><%= section.section_name %></option>
+                  <% }); %>                 
+                </select>
+              </div>
+            </div>
+
+            <div class="row mb-3 border p-3 m-0 bg-body-tertiary p-3">              
+              <span class="card-header bg-black-subtle mb-3">Permanent Address</span>
+              <div class="col-md-3 mb-3">
+                <label class="form-label">Province</label>
+                <select id="pprovince" class="form-select <%= errorFields.includes('pprovince') ? 'is-invalid' : '' %>" name="pprovince">
+                  <option disabled selected hidden>--select province--</option>
+                  <% provinces.forEach(function(province) { %>
+                    <option value="<%= province.id %>" <%= (oldInput?.pprovince == province.id || student?.pprovince == province.id) ? 'selected' : '' %>><%= province.pname %></option>
+                  <% }); %>                 
+                </select>
+                
+              </div>
+              
+              <div class="col-md-3 mb-3">
+                <label class="form-label">District</label>
+                <select id="pdistrict" class="form-select <%= errorFields.includes('pdistrict') ? 'is-invalid' : '' %>" name="pdistrict">
+                  <option disabled selected hidden>--select district--</option>                                     
+                </select>    
+                <input type="hidden" id="oldPdistrict" value="<%= oldInput?.pdistrict || student?.pdistrict || '' %>">
+                        
+              </div>
+              <div class="col-md-3 mb-3">
+                <label class="form-label">Muncipality or VDC</label>
+                <select id="pvdc" class="form-select <%= errorFields.includes('pmuncipality') ? 'is-invalid' : '' %>" name="pmuncipality">
+                  <option disabled selected hidden>--select vdc/municipality--</option>                 
+                </select>  
+                <input type="hidden" id="oldPvdc" value="<%= oldInput?.pmuncipality || student?.pmuncipality || '' %>">                         
+              </div> 
+              <div class="col-md-3 mb-3">
+                <label class="form-label">Ward Number</label>
+                <input id="pward" type="number" name="pward" class="form-control <%= errorFields.includes('pward') ? 'is-invalid' : '' %>" value="<%= oldInput?.pward || student?.pward %>" placeholder="Enter Ward Number" />
+                                             
+              </div> 
+            </div>  
+
+            <div class="row mb-3 border p-3 m-0 bg-body-tertiary p-3">
+              <span class="mb-3">
+                <input type="checkbox" id="makeAddressSame">
+                <span class="text-danger">"If the temporary address is the same as the permanent address.(check this)"</span>
+              </span>
+              <span class="card-header bg-black-subtle mb-3">Temporary Address</span>
+              <div class="col-md-3 mb-3">
+                <label class="form-label">Province</label>
+                <select id="tprovince" class="form-select <%= errorFields.includes('tprovince') ? 'is-invalid' : '' %>" name="tprovince">
+                  <option disabled selected hidden>--select province--</option> 
+                  <% provinces.forEach(function(province) { %>
+                    <option value="<%= province.id %>" <%= (oldInput?.tprovince == province.id || student?.tprovince == province.id) ? 'selected' : '' %>><%= province.pname %></option>
+                  <% }); %>         
+                </select>
+                  
+              </div>
+              
+              <div class="col-md-3 mb-3">
+                <label class="form-label">District</label>
+                <select id="tdistrict" class="form-select <%= errorFields.includes('tdistrict') ? 'is-invalid' : '' %>" name="tdistrict">
+                  <option disabled selected hidden>--select district--</option>                                      
+                </select>
+                <input type="hidden" id="oldTdistrict" value="<%= oldInput?.tdistrict || student?.tdistrict || '' %>">                             
+              </div>
+              <div class="col-md-3 mb-3">
+                <label class="form-label">Muncipality or VDC</label>
+                <select id="tvdc" class="form-select <%= errorFields.includes('tmuncipality') ? 'is-invalid' : '' %>" name="tmuncipality">
+                  <option disabled selected hidden>--select vdc/municipality--</option>                 
+                </select>
+                <input type="hidden" id="oldTvdc" value="<%= oldInput?.tmuncipality || student?.tmuncipality || '' %>">
+                             
+              </div> 
+              <div class="col-md-3 mb-3">
+                <label class="form-label">Ward Number</label>
+                <input id="tward" type="number" name="tward" class="form-control <%= errorFields.includes('tward') ? 'is-invalid' : '' %>" value="<%= oldInput?.tward || student?.tward || '' %>" placeholder="Enter Ward Number" />
+                                             
+              </div> 
+            </div> 
+
+            <div class="row mb-3 border p-3 m-0 bg-body-tertiary p-3">
+              <span class="card-header bg-black-subtle mb-3">Parent's Details</span>
+              <div class="col-md-3 mb-3">
+                <label class="form-label">Father Name</label>
+                <input type="text" name="fname" class="form-control <%= errorFields.includes('fname') ? 'is-invalid' : '' %>" value="<%= oldInput?.fname || student?.fname || '' %>" placeholder="Enter Full Name" />
+              </div>
+              <div class="col-md-3 mb-3">
+                <label class="form-label">Occupation</label>
+                <input type="text" name="foccupation" class="form-control <%= errorFields.includes('foccupation') ? 'is-invalid' : '' %>" value="<%= oldInput?.foccupation || student?.foccupation || '' %>" placeholder="Enter Occupation" />
+              </div>
+              <div class="col-md-3 mb-3">
+                <label class="form-label">Contact Number</label>
+                <input type="text" name="fcontactnumber" class="form-control <%= errorFields.includes('fcontactnumber') ? 'is-invalid' : '' %>" value="<%= oldInput?.fcontactnumber || student?.fcontactnumber || '' %>" placeholder="Enter Contact Number" />
+              </div>
+              <div class="col-md-3 mb-3">
+                <label class="form-label">Enter Email</label>
+                <input type="email" name="femail" class="form-control <%= errorFields.includes('femail') ? 'is-invalid' : '' %>" value="<%= oldInput?.femail || student?.femail || '' %>" placeholder="Enter Email Address" />
+              </div> 
+              
+            </div> 
+
+            <div class="row mb-3 border p-3 m-0 bg-body-tertiary p-3">
+              <span class="card-header bg-black-subtle mb-3">Local Gurdian's Details</span>
+              <div class="col-md-3 mb-3">
+                <label class="form-label">Gurdian Name</label>
+                <input type="text" name="lgname" class="form-control <%= errorFields.includes('lgname') ? 'is-invalid' : '' %>" value="<%= oldInput?.lgname || student?.lgname || '' %>" placeholder="Enter Gurdian Name" />
+              </div>
+              <div class="col-md-3 mb-3">
+                <label class="form-label">Occupation</label>
+                <input type="text" name="lgoccupation" class="form-control <%= errorFields.includes('lgoccupation') ? 'is-invalid' : '' %>" value="<%= oldInput?.lgoccupation || student?.lgoccupation || '' %>" placeholder="Enter Occupation" />
+              </div>
+              <div class="col-md-3 mb-3">
+                <label class="form-label">Contact Number</label>
+                <input type="text" name="lgcontactnumber" class="form-control <%= errorFields.includes('lgcontactnumber') ? 'is-invalid' : '' %>" value="<%= oldInput?.lgcontactnumber || student?.lgcontactnumber || '' %>" placeholder="Enter Gurdian Number" />
+              </div>
+              <div class="col-md-3 mb-3">
+                <label class="form-label">Enter Email</label>
+                <input type="email" name="lgemail" class="form-control <%= errorFields.includes('lgemail') ? 'is-invalid' : '' %>" value="<%= oldInput?.lgemail || student?.lgemail || '' %>" placeholder="Enter Email Address" />
+              </div>              
+            </div>             
+
+            <div class="row mb-3 border p-3 m-0 bg-body-tertiary">
+              <div class="col-md-6">
+                <label class="form-label">Status</label>
+                <select class="form-select" name="status">
+                  <option value="active" <%= oldInput?.status === 'active' || student?.status === 'active' ? 'selected' : '' %>>Active</option>
+                  <option value="inactive" <%= oldInput?.status === 'inactive' || student?.status === 'active' ? 'selected' : '' %>>Inactive</option>
+                </select>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Student Photo</label>
+                <input type="file" name="image" class="form-control <%= errorFields.includes('image') ? 'is-invalid' : '' %>" />
+              </div>
+            </div>
+
+            <div class="d-grid mt-4">
+              <button type="submit" class="btn btn-success btn-lg">
+                <i class="fas fa-paper-plane me-2"></i>Submit
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<%- include('../layouts/footer') %>
