@@ -1,5 +1,8 @@
 document.addEventListener("DOMContentLoaded", function () {
   const loadingSpinner = document.getElementById("loading");
+  const classSelect = document.querySelector('select[name="class_id"]');
+  const sectionSelect = document.querySelector('select[name="section_id"]');
+  const oldSectionId = "<%= oldInput?.section_id || student?.section_id || '' %>";
 
   const links = document.querySelectorAll("a");
   links.forEach((link) => {
@@ -37,4 +40,35 @@ document.addEventListener("DOMContentLoaded", function () {
       sidebar.classList.toggle("collapsed");
     });
   }
+  async function loadSections(classId) {
+    if (!classId) return;
+
+    try {
+      const response = await fetch(`/students/get-sections/${classId}`);
+      const sections = await response.json();
+
+      sectionSelect.innerHTML = '<option disabled selected hidden>--select section--</option>';
+
+      sections.forEach(section => {
+        const option = document.createElement("option");
+        option.value = section.id;
+        option.textContent = section.section_name;
+        if (section.id == oldSectionId) option.selected = true;
+        sectionSelect.appendChild(option);
+      });
+    } catch (err) {
+      console.error("Failed to load sections:", err);
+    }
+  }
+  classSelect.addEventListener("change", () => {
+    const selectedClassId = classSelect.value;
+    loadSections(selectedClassId);
+  });
+
+  // Initial load if class already selected (e.g., edit mode)
+  if (classSelect.value) {
+    loadSections(classSelect.value);
+  }
 });
+
+

@@ -3,6 +3,7 @@ module.exports = (sequelize, DataTypes) => {
     "sections",
     {
       section_name: DataTypes.STRING(10),
+      class_id: DataTypes.INTEGER,
     },
     {
       class_id: DataTypes.INTEGER,
@@ -13,3 +14,4 @@ module.exports = (sequelize, DataTypes) => {
     }
   );
 };
+

@@ -20,4 +20,9 @@ $(document).ready(function () {
   $(document).on("click", ".deleteSectionBox", function () {
     $(this).closest(".sectionNewBox").remove();
   });
+
+  //To Remove Message
+  $(document).on("click", ".btn-close", function () {
+    $(this).closest(".alert").remove();
+  });
 });
