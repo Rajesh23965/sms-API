@@ -67,5 +67,4 @@ router.get("/get-sections/:classId", async (req, res) => {
   }
 });
 
-
 module.exports = router;

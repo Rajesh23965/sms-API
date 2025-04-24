@@ -32,7 +32,6 @@ const addorupdateClass = async (req, res) => {
     const classData = req.body;
     const studentClassId = req.query.classId;
     const redirectURL = `/classes/class-form`;
-
     const classExists = await StudentClass.findOne({
       where: { class_name: classData.class_name },
     });

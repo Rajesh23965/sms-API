@@ -141,19 +141,18 @@ const loadStudentList = async (req, res) => {
   }
 };
 
-
 const deleteStudent = async (req, res) => {
   try {
     const id = req.params.id;
     const studentData = await Student.findByPk(id);
     if (!studentData) {
       req.session.error = "Student record not found";
-      return res.redirect("/classes/class-form");
+      return res.redirect("/students/student-list");
     }
 
     await studentData.destroy();
     req.session.success = "Student Record Deleted Successfully";
-    return res.redirect("/classes/class-form");
+    return res.redirect("/students/student-list");
   } catch (error) {
     console.error("Error deleting class:", error);
     req.session.errorFields = ["first_name"];
@@ -167,5 +166,5 @@ module.exports = {
   addOrUpdateStudent,
   loadStudentForm,
   loadStudentList,
-  deleteStudent
+  deleteStudent,
 };

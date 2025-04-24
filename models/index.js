@@ -34,6 +34,10 @@ db.province = require("./location/provincemodels.js")(sequelize, DataTypes);
 db.district = require("./location/districtmodels.js")(sequelize, DataTypes);
 db.vdc = require("./location/vdcmodels.js")(sequelize, DataTypes);
 
+db.subjectCode = require("./classModel/subjectCode")(sequelize, DataTypes);
+db.subjectClass = require("./classModel/subjectClass")(sequelize, DataTypes);
+db.subjectTeacher = require("./classModel/subjectTeacher")(sequelize, DataTypes);
+
 // Setup associations
 require("./associations.js")(db);
 
