@@ -58,7 +58,7 @@ router.get("/get-vdcs/:districtId", async (req, res) => {
 router.get("/get-sections/:classId", async (req, res) => {
   try {
     const sections = await Section.findAll({
-      where: { class_id: req.params.classId }, // FIXED
+      where: { class_id: req.params.classId }, 
     });
     res.json(sections);
   } catch (error) {

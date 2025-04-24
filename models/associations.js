@@ -32,4 +32,10 @@ module.exports = (db) => {
   // ========== Fees & Payments ==========
   db.fees.belongsTo(db.students, { foreignKey: "student_id" }); // Fee belongs to Student
   db.payments.belongsTo(db.fees, { foreignKey: "fee_id" }); // Payment belongs to Fee
+
+  // ========== Subject has many codes ==========
+  db.subjects.hasMany(db.subjectCode, { foreignKey: 'subject_id' });
+  db.subjectCode.belongsTo(db.subjects, { foreignKey: 'subject_id' });
+
+
 };

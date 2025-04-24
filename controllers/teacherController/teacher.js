@@ -11,8 +11,19 @@ const loadteacherform = async (req, res) => {
   const errorFields = req.flash("errorFields")[0] || [];
 
   const allClass = await ClasList.findAll();
-  // const allsubject = await Subject.findAll();
   const allSections = await Section.findAll();
+
+  // Get selected class IDs from oldInput
+  const selectedClassIds = oldInput.class_id 
+    ? Array.isArray(oldInput.class_id) 
+      ? oldInput.class_id.map(id => parseInt(id)) 
+      : [parseInt(oldInput.class_id)]
+    : [];
+
+  // Filter sections based on selected classes
+  const filteredSections = selectedClassIds.length > 0
+    ? allSections.filter(section => selectedClassIds.includes(section.class_id))
+    : [];
 
   res.render("teachers/teacherform", {
     success,
@@ -20,8 +31,8 @@ const loadteacherform = async (req, res) => {
     oldInput,
     errorFields,
     allClass,
-    // allsubject,
-    allSections,
+    allSections: filteredSections,
+    selectedClassIds
   });
 };
 
@@ -85,11 +96,17 @@ const addorupdateteacher = async (req, res) => {
     const sectionIds = Array.isArray(req.body.section_id)
       ? req.body.section_id.join(",")
       : req.body.section_id || "";
+    const subjectIds = req.body.subject_id
+      ? Array.isArray(req.body.subject_id)
+        ? req.body.subject_id.join(",")
+        : req.body.subject_id
+      : null; // Handle subject_id as optional
 
     const teacherPayload = {
       ...teacherData,
       class_id: classIds,
       section_id: sectionIds,
+      subject_id: subjectIds // Include subject_id in payload
     };
 
     if (teacherId) {
@@ -127,8 +144,32 @@ const loadteacherlist = async (req, res) => {
   });
 };
 
+
+// Add this to your teacherController file
+const getSectionsByClasses = async (req, res) => {
+  try {
+    const { classIds } = req.body;
+    if (!classIds || classIds.length === 0) {
+      return res.json([]);
+    }
+
+    const sections = await Section.findAll({
+      where: {
+        class_id: classIds
+      }
+    });
+
+    res.json(sections);
+  } catch (error) {
+    console.error('Error fetching sections:', error);
+    res.status(500).json({ error: 'Error fetching sections' });
+  }
+};
+
+
 module.exports = {
   loadteacherform,
   addorupdateteacher,
   loadteacherlist,
+  getSectionsByClasses
 };

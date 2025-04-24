@@ -12,17 +12,17 @@
         <div class="card-body p-2 border">
            
           <% if (success) { %>
-            <div class="alert alert-success"><%= success %></div>
+            <div class="alert alert-success alert-dismissible fade show" role="alert"><%= success %> <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button> </div>
           <% } %>
           <% if (error) { %>
-            <div class="alert alert-danger"><%= error %></div>
+            <div class="alert alert-danger alert-dismissible fade show" role="alert"><%= error %> <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button> </div>
           <% } %>
 
           <div class="card-header mb-3 bg-danger text-light">
             <h5>Teacher Details</h5>
           </div>
 
-          <form action="/teachers/api/teacher" method="POST">
+          <form action="/teachers/api/teacher" method="POST" id="teacherForm">
             <div class="row p-3 bg-body-tertiary">
               <div class="col-md-4 m-0">
                 <div class="d-flex flex-column border m-0 shadow p-3 border">
@@ -85,10 +85,11 @@
                       <label class="form-check-label cursor-pointer">
                       <input 
                         type="checkbox" 
-                        class="form-check-input" 
+                        class="form-check-input class-checkbox" 
                         name="class_id[]" 
                         value="<%= all.id %>" 
                         <%= isChecked ? 'checked' : '' %>
+                        data-class-id="<%= all.id %>"
                       />
                       <%= all.class_name ?? '' %></label>
                     </div>
@@ -99,8 +100,57 @@
               </div>
               <div class="col-md-4 d-flex flex-column border m-0 shadow p-3">
                 <h6 class="title-header bg-danger border-2 text-white">Section List</h6>
-
-              </div>
+                <div id="sectionContainer">
+                  <% if (allSections && allSections.length > 0) { %>
+                    <% allSections.forEach(function(section) { 
+                      const isChecked = Array.isArray(oldInput?.section_id) 
+                        ? oldInput.section_id.includes(section.id.toString()) 
+                        : oldInput?.section_id == section.id;
+                    %>
+                      <div class="form-check">
+                        <label class="form-check-label cursor-pointer">
+                        <input 
+                          type="checkbox" 
+                          class="form-check-input" 
+                          name="section_id[]" 
+                          value="<%= section.id %>" 
+                          <%= isChecked ? 'checked' : '' %>
+                        />
+                        <%= section.section_name ?? '' %></label>
+                      </div>
+                      <hr class="p-2 m-0" />
+                    <% }); %>
+                  <% } else { %>
+                    <p class="text-muted">Please select classes to see available sections</p>
+                  <% } %>
+                </div>
+                <h6 class="title-header bg-danger border-2 text-white">Subject List</h6>
+                <div id="sectionContainer">
+                  <% if (allSections && allSections.length > 0) { %>
+                    <% allSections.forEach(function(section) { 
+                      const isChecked = Array.isArray(oldInput?.section_id) 
+                        ? oldInput.section_id.includes(section.id.toString()) 
+                        : oldInput?.section_id == section.id;
+                    %>
+                      <div class="form-check">
+                        <label class="form-check-label cursor-pointer">
+                        <input 
+                          type="checkbox" 
+                          class="form-check-input" 
+                          name="section_id[]" 
+                          value="<%= section.id %>" 
+                          <%= isChecked ? 'checked' : '' %>
+                        />
+                        <%= section.section_name ?? '' %></label>
+                      </div>
+                      <hr class="p-2 m-0" />
+                    <% }); %>
+                  <% } else { %>
+                    <p class="text-muted">Please select sections to see available subjects</p>
+                  <% } %>
+                </div>
+                </div>
+              
             </div>
           </form>
         </div>
@@ -108,5 +158,7 @@
     </div>
   </div>
 </div>
+
+
 
 <%- include('../layouts/footer') %>
