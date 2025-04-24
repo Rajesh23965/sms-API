@@ -1,1 +1,2 @@
-# sms-API
+# School Management System
+
