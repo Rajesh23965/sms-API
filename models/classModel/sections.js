@@ -3,6 +3,7 @@ module.exports = (sequelize, DataTypes) => {
     "sections",
     {
       section_name: DataTypes.STRING(10),
+      class_id: DataTypes.INTEGER,
     },
     {
       timestamps: true,
@@ -10,6 +11,4 @@ module.exports = (sequelize, DataTypes) => {
     }
   );
 };
-
-
 
