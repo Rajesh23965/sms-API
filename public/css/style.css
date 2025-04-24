@@ -165,12 +165,7 @@ input::placeholder {
   display: flex;
   justify-content: space-between;
   align-items: center;
-<<<<<<< HEAD
-  padding: 16px;
-  background: #aea1c7;
-=======
   border-bottom: 1px solid #ccc;
->>>>>>> 502d06e07e4a7b3203b711b41ab22cb05305b48e
 }
 
 .header h1 {
