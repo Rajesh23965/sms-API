@@ -1,60 +1,62 @@
-function searchDropdown(type) {
-  const input = document.getElementById(type);
-  const dropdown = document.getElementById(type + "_dropdown");
-  const query = input.value.trim();
+$(document).ready(function () {
+  $(document).on("keyup", "#admissionno", function () {
+    const admissionNumber = $(this).val();
 
-  if (query.length < 1) {
-    dropdown.innerHTML = "";
-    dropdown.style.display = "none";
-    return;
-  }
+    // Always first reset all fields
+    $(".admissionNumber").html("");
+    $(".studentName").html("");
+    $(".studentClass").html("");
+    $(".StudentSection").html("");
+    $(".studentMakrsBox").html("");
 
-  fetch(`/exams/api/search?type=${type}&&q=${encodeURIComponent(query)}`)
-    .then((res) => res.json())
-    .then((data) => {
-      dropdown.innerHTML = "";
+    if (admissionNumber.length > 4) {
+      $.ajax({
+        method: "GET",
+        url: "api/search",
+        data: {
+          q: admissionNumber,
+        },
+        success: function (response) {
+          if (response && response.admission_no) {
+            // Display student data
+            $(".admissionNumber").val(response.admission_no);
+            $(".studentName").html(
+              (response.first_name || "") +
+                " " +
+                (response.middle_name || "") +
+                " " +
+                (response.last_name || "")
+            );
+            $(".studentClass").html(response.class.class_name || "-");
+            $(".StudentSection").html(response.section.section_name || "-");
 
-      if (data.length === 0) {
-        dropdown.innerHTML = `<div class="dropdown-item disabled">No results</div>`;
-      } else {
-        data.forEach((item) => {
-          const div = document.createElement("div");
-          div.className = "dropdown-item";
+            // Create dynamic marks input boxes for each subject
+            let studentMakrsBox = "";
+            if (response.class.subjects && response.class.subjects.length > 0) {
+              response.class.subjects.forEach(function (subject) {
+                studentMakrsBox += `
+                  <label class="d-flex justify-content-between bg-light w-100 p-2 border">${subject.name}: 
+                    <input type="text" name="${subject.code}" class="marks-input w-25" />
+                  </label><br>
+                `;
+              });
+            } else {
+              studentMakrsBox = "No subjects available.";
+            }
 
-          // Handle different types of results
-          if (type === "exam_type") {
-            div.textContent = item.name || "No name";
-          } else if (type === "class") {
-            div.textContent = item.class_name || "No name";
-          } else if (type === "subject") {
-            div.textContent = item.name || "No name";
-          } else if (type === "section") {
-            div.textContent = item.section_name || "No name";
-          } else if (type === "student") {
-            div.textContent =
-              `${item.first_name} ${item.middle_name || ""} ${
-                item.last_name || ""
-              }`.trim() || "No name";
+            // Append the dynamic marks boxes to the studentMakrsBox div
+            $(".studentMakrsBox").html(studentMakrsBox);
           } else {
-            div.textContent = item.name || "No name";
+            // If no student data found, show an error message
+            $(".studentMakrsBox").html("No student found.");
           }
-
-          div.onclick = () => {
-            input.value = div.textContent;
-            dropdown.innerHTML = "";
-            dropdown.style.display = "none";
-          };
-
-          dropdown.appendChild(div);
-        });
-      }
-
-      dropdown.style.display = "block";
-    })
-    .catch((err) => {
-      console.error("Search error:", err);
-      dropdown.innerHTML =
-        "<div class='dropdown-item disabled'>Error loading</div>";
-      dropdown.style.display = "block";
-    });
-}
+        },
+        error: function () {
+          // Handle the error
+          console.error("API call failed");
+          $(".studentMakrsBox").html("Registration not found");
+        },
+      });
+    }
+  });
+});
