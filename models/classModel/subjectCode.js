@@ -8,7 +8,12 @@ module.exports = (sequelize, DataTypes) => {
       subject_id: {
         type: DataTypes.INTEGER,
         allowNull: false
-      }
+      },
+      
+      class_id: {
+        type: DataTypes.INTEGER,
+        allowNull: false
+      },
     });
   };
   

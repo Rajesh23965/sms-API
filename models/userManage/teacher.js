@@ -9,7 +9,14 @@ module.exports = (sequelize, DataTypes) => {
       gender: DataTypes.ENUM('male', 'female', 'others'),
       qualification: DataTypes.STRING(100),
       address: DataTypes.TEXT,
-      class_id: DataTypes.TEXT,
+      class_id: {
+        type: DataTypes.INTEGER, 
+        allowNull: true, 
+        references: {
+          model: 'classes', 
+          key: 'id'
+        }
+      },
       section_id: DataTypes.TEXT,
       subject_id: {
         type: DataTypes.TEXT,
@@ -26,3 +33,4 @@ module.exports = (sequelize, DataTypes) => {
     }
   );
 };
+

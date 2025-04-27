@@ -1,193 +1,270 @@
 const db = require("../../models");
-const SubjectClass = db.subjectClass;
 const Subject = db.subjects;
+const SubjectClass = db.subjectClass;
 const SubjectCode = db.subjectCode;
 const SubjectTeacher = db.subjectTeacher;
+const StudentClass = db.classes;
+const Teacher = db.teachers;
 
-
-const addSubject = async (req, res) => {
+const loadSubjectForm = async (req, res) => {
     try {
-        const { name, code, class_id, teacher_id } = req.body;
+        const subjectId = req.query.subjectId;
+        const errorFields = req.session.errorFields || [];
+        const oldInput = req.session.oldInput || {};
+        const success = req.session.success || "";
+        const error = req.session.error || "";
+        req.session.errorFields = null;
+        req.session.oldInput = null;
+        req.session.success = null;
+        req.session.error = null;
 
-        if (!name || !code?.length || !class_id?.length || !teacher_id?.length) {
-            return res.status(400).json({ success: false, error: "All fields are required" });
-        }
+        // Fetch subject data with all associations
+        const subjectData = subjectId
+        ? await Subject.findByPk(subjectId, {
+            include: [
+              { 
+                model: SubjectClass, 
+                as: 'subject_classes', 
+                include: [
+                  { 
+                    model: StudentClass, 
+                    as: 'class',
+                    include: [{
+                      model: db.sections,
+                      as: 'sections'
+                    }]
+                  },
+                  {
+                    model: db.sections,
+                    as: 'section',
+                    attributes: ['id', 'section_name', 'class_id'] // Explicitly list columns
+                  }
+                ] 
+              }
+            ],
+          })
+        : null;
 
-        // Create subject
-        const subject = await Subject.create({ name, class_id, teacher_id });
-
-        // Add multiple codes
-        for (let c of code) {
-            await SubjectCode.create({ code: c, subject_id: subject.id });
-        }
-
-        // Add subject-class associations
-        for (let cid of class_id) {
-            await SubjectClass.create({ subject_id: subject.id, class_id: cid });
-        }
-
-        // Add subject-teacher associations
-        for (let tid of teacher_id) {
-            await SubjectTeacher.create({ subject_id: subject.id, teacher_id: tid });
-        }
-
-        res.status(201).json({
-            success: true,
-            message: "Subject created with multiple codes, classes, and teachers",
-            subject,
+        // Fetch all subjects with their class and section associations
+        const subjects = await Subject.findAll({
+            include: [
+                {
+                    model: SubjectClass,
+                    as: 'subject_classes',
+                    include: [
+                        { 
+                            model: StudentClass, 
+                            as: 'class',
+                            include: [{
+                                model: db.sections,
+                                as: 'sections'
+                            }]
+                        },
+                        {
+                            model: db.sections,
+                            as: 'section'
+                        }
+                    ]
+                }
+            ],
+            order: [['name', 'ASC']] // Optional: sort subjects alphabetically
         });
 
-    } catch (error) {
-        console.error("Error while creating subject:", error);
-        res.status(500).json({ success: false, error: "Internal Server Error" });
+        // Get all classes with their sections for the form dropdowns
+        const listclass = await StudentClass.findAll({
+            include: [{
+                model: db.sections,
+                as: 'sections'
+            }],
+            order: [['class_name', 'ASC']] // Optional: sort classes alphabetically
+        });
+
+        const teacherlist = await Teacher.findAll({
+            order: [['name', 'ASC']] // Optional: sort teachers alphabetically
+        });
+
+        res.render("subjects/subjectform", {
+            errorFields,
+            oldInput,
+            listclass,
+            teacherlist,
+            subjectData,
+            subjects,
+            subjectId,
+            success,
+            error
+        });
+    } catch (err) {
+        console.error('Error in loadSubjectForm:', err);
+        res.status(500).send("Server Error");
     }
 };
-
-const getAllSubject = async (req, res) => {
+const addOrUpdateSubject = async (req, res) => {
     try {
-        const page = parseInt(req.query.page) || 1;
-        const limit = parseInt(req.query.limit) || 10;
-        if (isNaN(page) || isNaN(limit) || page < 1 || limit < 1) {
-            return res.status(400).json({
-                success: false,
-                error: "Invalid pagination parameters",
-                details: {
-                    receivedPage: req.query.page,
-                    receivedLimit: req.query.lmit,
-                    parsedpage: page,
-                    parsedLimit: limit
+        const { name, passmarks, fullmarks, section_mapping } = req.body;
+        const subjectId = req.query.subjectId;
+        const redirectURL = "/subjects/subject-form";
 
+        // Parse mappings: "1_2" => { class_id: 1, section_id: 2 }
+        const class_sections = (section_mapping || []).map(mapping => {
+            const [class_id, section_id] = mapping.split('_').map(Number);
+            return {
+                class_id,
+                section_id,
+                passmarks,
+                fullmarks
+            };
+        });
+
+        // Input validation
+        if (!name || !passmarks || !fullmarks || class_sections.length === 0) {
+            req.session.errorFields = ["name", "passmarks", "fullmarks", "section_mapping"];
+            req.session.oldInput = req.body;
+            req.session.error = "All fields are required.";
+            return res.redirect(redirectURL);
+        }
+
+        if (parseInt(passmarks) >= parseInt(fullmarks)) {
+            req.session.errorFields = ["passmarks", "fullmarks"];
+            req.session.oldInput = req.body;
+            req.session.error = "Pass marks must be less than full marks.";
+            return res.redirect(redirectURL);
+        }
+
+        // Subject prefix logic (e.g. NEP from Nepali)
+        const sanitize = str => str.replace(/[^A-Z]/gi, '').toUpperCase();
+        const prefix = sanitize(name).substring(0, 3);
+
+        let subject;
+
+        if (subjectId) {
+            // Update existing subject
+            subject = await Subject.findByPk(subjectId);
+            if (!subject) {
+                req.session.error = "Subject not found.";
+                return res.redirect(redirectURL);
+            }
+
+            subject.name = name;
+            subject.passmarks = passmarks;
+            subject.fullmarks = fullmarks;
+            await subject.save();
+
+            // Remove old class-section-code mappings
+            await SubjectClass.destroy({ where: { subject_id: subjectId } });
+            await SubjectCode.destroy({ where: { subject_id: subjectId } });
+
+            req.session.success = "Subject updated successfully.";
+        } else {
+            // Create new subject
+            subject = await Subject.create({ name, passmarks, fullmarks });
+            req.session.success = "Subject added successfully.";
+        }
+
+        // Create subjectClass + subjectCode
+        for (const cs of class_sections) {
+            // Validate class-section relationship
+            const sectionExists = await db.sections.findOne({
+                where: { id: cs.section_id, class_id: cs.class_id }
+            });
+
+            if (!sectionExists) {
+                console.warn(`Invalid class-section: Class ${cs.class_id}, Section ${cs.section_id}`);
+                continue;
+            }
+
+            // Create SubjectClass
+            await SubjectClass.create({
+                subject_id: subject.id,
+                class_id: cs.class_id,
+                section_id: cs.section_id,
+                passmarks: cs.passmarks,
+                fullmarks: cs.fullmarks
+            });
+
+            // Generate subject code like NEP01, SCI02
+            const classInfo = await db.classes.findByPk(cs.class_id);
+            const classNumber = classInfo.class_number || classInfo.id;
+            const codeSuffix = String(classNumber).padStart(2, '0'); // e.g., 01
+            const baseCode = `${prefix}${codeSuffix}`;
+            let subjectCode = baseCode;
+
+            // Ensure code uniqueness
+            let counter = 1;
+            while (await SubjectCode.findOne({ where: { code: subjectCode } })) {
+                subjectCode = `${baseCode}${counter++}`; // NEP01, NEP011, NEP012
+            }
+
+            // Create SubjectCode if not exists
+            const existingCode = await SubjectCode.findOne({
+                where: {
+                    subject_id: subject.id,
+                    class_id: cs.class_id
                 }
             });
+
+            if (!existingCode) {
+                await SubjectCode.create({
+                    subject_id: subject.id,
+                    code: subjectCode,
+                    class_id: cs.class_id
+                });
+            }
         }
 
-        const offset = (page - 1) * limit;
-        const { count, rows } = await Subject.findAndCountAll({
-            offset, limit, order: [["createdAt", "DESC"]]
-        });
-        const totalPages = Math.ceil(count / limit);
-
-        res.status(200).json({
-            success: true, message: "Subject fetched successfully", subject: rows,
-            pagination: {
-                totalRecords: count,
-                currentPage: page,
-                totalPages,
-                limit,
-                hasNextPage: page < totalPages,
-                hasPreviousPage: page > 1
-            }
-        })
+        return res.redirect(redirectURL);
     } catch (error) {
-        console.log("Error to fetch", error);
-        res.status(500).json({ success: false, error: "Internal Server Error", error });
-    }
-}
-
-const getSubjectById = async (req, res) => {
-    try {
-        const id = req.params.id;
-
-        const subject = await Subject.findByPk(id);
-        if (!subject) {
-            return res.status(404).json({
-                success: false, error: "Subject Not Found"
-            });
-        }
-        res.status(200).json({ success: true, message: "Subject fetched successfully", subject: subject })
-    } catch (error) {
-        console.log("Error to fetch", error);
-        res.status(500).json({ success: false, error: "Internal Server Error", error });
-    }
-}
-
-const updateSubject = async (req, res) => {
-    try {
-        const id = req.params.id;
-        const { name, code, class_id, teacher_id } = req.body;
-        const subject = await Subject.findByPk(id);
-        if (!subject) {
-            return res.status(404).json({ success: false, error: "Subject Not Found" });
-        }
-        subject.name = name || subject.name;
-        await subject.save();
-
-        if (code?.length) {
-            await SubjectCode.destroy({ where: { subject_id: id } });
-            for (let c of code) {
-                await SubjectCode.create({ code: c, subject_id: id });
-            }
-        }
-
-        if (class_id?.length) {
-
-            await SubjectClass.destroy({ where: { subject_id: id } });
-
-
-            for (let cid of class_id) {
-                await SubjectClass.create({ subject_id: id, class_id: cid });
-            }
-        }
-
-
-        if (teacher_id?.length) {
-
-            await SubjectTeacher.destroy({ where: { subject_id: id } });
-
-
-            for (let tid of teacher_id) {
-                await SubjectTeacher.create({ subject_id: id, teacher_id: tid });
-            }
-        }
-        res.status(200).json({
-            success: true,
-            message: "Subject updated successfully",
-            subject
-        });
-
-    } catch (error) {
-        console.error("Error while updating subject:", error);
-        res.status(500).json({ success: false, error: "Internal Server Error" });
+        console.error("Error in addOrUpdateSubject:", error);
+        req.session.errorFields = Object.keys(req.body);
+        req.session.oldInput = req.body;
+        req.session.error = "Something went wrong!";
+        return res.redirect("/subjects/subject-form");
     }
 };
 
 const deleteSubject = async (req, res) => {
     try {
-        const { id } = req.params;
-
-        // Check if subject exists
+        const id = req.params.id;
         const subject = await Subject.findByPk(id);
         if (!subject) {
-            return res.status(404).json({ success: false, error: "Subject not found" });
+            req.session.error = "Subject not found.";
+            return res.redirect("/subjects/subject-form");
         }
 
-        // Delete all associated subject codes
         await SubjectCode.destroy({ where: { subject_id: id } });
-
-        // Delete all associated class mappings
         await SubjectClass.destroy({ where: { subject_id: id } });
-
-        // Delete all associated teacher mappings
         await SubjectTeacher.destroy({ where: { subject_id: id } });
-
-        // Delete the subject itself
         await subject.destroy();
 
-        res.status(200).json({
-            success: true,
-            message: "Subject and all associated data deleted successfully",
-        });
+        req.session.success = "Subject deleted successfully.";
+        res.redirect("/subjects/subject-form");
     } catch (error) {
-        console.error("Error while deleting subject:", error);
-        res.status(500).json({ success: false, error: "Internal Server Error" });
+        console.error("Error deleting subject:", error);
+        req.session.error = "Internal server error.";
+        res.redirect("/subjects/subject-form");
+    }
+};
+
+const getSectionsByClass = async (req, res) => {
+    try {
+        const classId = req.params.classId;
+        const sections = await db.sections.findAll({
+            where: { class_id: classId },
+            attributes: ['id', 'section_name']
+        });
+
+        res.json(sections);
+    } catch (error) {
+        console.error("Error fetching sections:", error);
+        res.status(500).json({ error: "Internal Server Error" });
     }
 };
 
 
 module.exports = {
-    addSubject,
-    getAllSubject,
-    getSubjectById,
-    updateSubject,
-    deleteSubject
+    loadSubjectForm,
+    addOrUpdateSubject,
+    deleteSubject,
+    getSectionsByClass
 };
+
