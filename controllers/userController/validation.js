@@ -1,4 +1,4 @@
-const validateField=()=>{
+const validateField=async()=>{
     if (!first_name || !last_name || !gender || !dob || !address || !phone || !email || !admission_no || !admission_date) {
         return res.status(400).json({ error: "All fields are required." });
     }
