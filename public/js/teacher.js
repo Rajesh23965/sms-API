@@ -4,14 +4,24 @@ document.addEventListener('DOMContentLoaded', function () {
   const sectionContainer = document.getElementById('sectionContainer');
   const subjectContainer = document.getElementById('subjectContainer');
 
+  const classColors = [
+    'bg-primary',
+    'bg-success',
+    'bg-danger',
+    'bg-warning',
+    'bg-info',
+    'bg-secondary'
+  ];
 
-  
   async function updateSectionsAndSubjects() {
-    const selectedClassIds = Array.from(classCheckboxes)
+    const selectedClasses = Array.from(classCheckboxes)
       .filter(cb => cb.checked)
-      .map(cb => cb.value);
+      .map(cb => ({
+        id: cb.value,
+        name: cb.closest('label').innerText.trim()
+      }));
 
-    if (!selectedClassIds.length) {
+    if (!selectedClasses.length) {
       sectionContainer.innerHTML = '<p class="text-muted">Please select classes to see available sections</p>';
       subjectContainer.innerHTML = '<p class="text-muted">Please select sections to see available subjects</p>';
       return;
@@ -21,7 +31,7 @@ document.addEventListener('DOMContentLoaded', function () {
       const response = await fetch('/teachers/get-sections', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ classIds: selectedClassIds }),
+        body: JSON.stringify({ classIds: selectedClasses.map(cls => cls.id) }),
       });
 
       const sections = await response.json();
@@ -37,9 +47,22 @@ document.addEventListener('DOMContentLoaded', function () {
           <hr class="p-2 m-0" />
         `;
 
-        sections.forEach(section => {
+        let colorIndex = 0;
+        let currentClassId = null;
+
+        sections.forEach((section, index) => {
+          const bgColorClass = classColors[colorIndex % classColors.length];
+
+          if (currentClassId !== section.class_id) {
+            const classObj = selectedClasses.find(cls => cls.id == section.class_id);
+            const className = classObj ? classObj.name : 'Unknown Class';
+
+            html += `<h6 class="p-2 text-white ${bgColorClass}">${className}</h6>`;
+            currentClassId = section.class_id;
+          }
+
           html += `
-            <div class="form-check">
+            <div class="form-check p-2 rounded mb-2">
               <label class="form-check-label cursor-pointer">
                 <input type="checkbox" 
                        class="form-check-input section-checkbox" 
@@ -48,8 +71,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 ${section.section_name}
               </label>
             </div>
-            <hr class="p-2 m-0" />
           `;
+          colorIndex++;
         });
 
         sectionContainer.innerHTML = html;
@@ -124,3 +147,4 @@ document.addEventListener('DOMContentLoaded', function () {
   // Initial load
   updateSectionsAndSubjects();
 });
+

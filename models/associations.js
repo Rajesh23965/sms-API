@@ -1,7 +1,8 @@
 module.exports = (db) => {
   // ========== Class & Section ==========
-  db.sections.belongsTo(db.classes, { foreignKey: "class_id" });
+  db.sections.belongsTo(db.classes, { foreignKey: "class_id",as:"class" });
   db.classes.hasMany(db.sections, { foreignKey: "class_id", as: "sections" });
+  
 
   // ========== Student ==========
   db.students.belongsTo(db.classes, { foreignKey: "class_id" });
@@ -88,4 +89,7 @@ db.subjectClass.belongsTo(db.sections, { foreignKey: 'section_id' });
 
 db.subjects.hasMany(db.subjectClass, { foreignKey: 'subject_id' });
 db.subjectClass.belongsTo(db.subjects, { foreignKey: 'subject_id' });
+
+
+
 };

@@ -43,13 +43,14 @@
           </div>
           <% } %>
 
-          <table class="table table-responsive">
-            <thead>
+          <table class="table table-bordered table-hover">
+            <thead class="table-light">
               <tr>
                 <th>S.N</th>
                 <th>Teacher name</th>
                 <th>Assigned class</th>
                 <th>Assigned section</th>
+                <th>Assigned Subject</th>
                 <th>Action</th>
               </tr>
             </thead>
@@ -61,6 +62,7 @@
                 <td><%= tl.name %></td>
                 <td><%= tl.class_id %></td>
                 <td><%= tl.section_id %></td>
+                <td><%=tl.subject_id%></td>
                 <td>
                   <a
                     class="btn btn-outline-success fa fa-edit"

@@ -1,7 +1,6 @@
 const db = require("../../models");
 const ClassList = db.classes;
 const Section = db.sections;
-const { Op } = require("sequelize");
 
 const loadsectionform = async (req, res) => {
   const error = req.flash("error")[0] || "";
@@ -17,10 +16,15 @@ const loadsectionform = async (req, res) => {
     if (classIdforSection) {
       sectionsById = await Section.findAll({
         where: { class_id: classIdforSection },
+        include: [
+          {
+            model: ClassList,
+            as: "class", 
+            attributes: ['name'],
+          },
+        ],
       });
     }
-
-    // res.send(sectionsById);
 
     const listclass = await ClassList.findAll();
     const classWithSections = await ClassList.findAll({

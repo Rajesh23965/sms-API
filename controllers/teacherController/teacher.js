@@ -1,9 +1,9 @@
 const db = require("../../models");
 const Teacher = db.teachers;
 const ClasList = db.classes;
-// const Subject = db.subjects;
+const Subject = db.subjects;
 const Section = db.sections;
-const SubjectClass=db.subjectClass
+const SubjectClass = db.subjectClass
 const loadteacherform = async (req, res) => {
   try {
     const success = req.flash("success")[0];
@@ -15,6 +15,7 @@ const loadteacherform = async (req, res) => {
 
     const allClass = await ClasList.findAll();
     const allSections = await Section.findAll();
+    const allSubjects = await Subject.findAll();
 
     let teacherData = {};
 
@@ -27,15 +28,15 @@ const loadteacherform = async (req, res) => {
           section_id: teacher.section_id ? teacher.section_id.split(",") : [],
           subject_id: teacher.subject_id ? teacher.subject_id.split(",") : [],
         };
+
       }
     }
 
     const selectedClassIds = oldInput.class_id?.length ? oldInput.class_id : teacherData.class_id || [];
-    const selectedSectionIds = oldInput.section_id?.length ? oldInput.section_id : teacherData.section_id || [];
 
-    const filteredSections = selectedClassIds.length > 0
-      ? allSections.filter(section => selectedClassIds.includes(section.class_id.toString()))
-      : [];
+    // const filteredSections = selectedClassIds.length > 0
+    //   ? allSections.filter(section => selectedClassIds.includes(section.class_id.toString()))
+    //   : [];
 
     res.render("teachers/teacherform", {
       success,
@@ -43,7 +44,7 @@ const loadteacherform = async (req, res) => {
       oldInput: Object.keys(oldInput).length ? oldInput : teacherData,
       errorFields,
       allClass,
-      allSections: filteredSections,
+      allSections,
       selectedClassIds,
       teacherId
     });
@@ -187,7 +188,7 @@ const getSubjectsBySections = async (req, res) => {
 
     const uniqueSubjects = [];
     const seenSubjects = new Set();
-    
+
     subjects.forEach(sc => {
       const subj = sc.subject;
       if (subj && !seenSubjects.has(subj.id)) {

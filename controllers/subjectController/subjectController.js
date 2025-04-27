@@ -20,73 +20,71 @@ const loadSubjectForm = async (req, res) => {
 
         // Fetch subject data with all associations
         const subjectData = subjectId
-        ? await Subject.findByPk(subjectId, {
-            include: [
-              { 
-                model: SubjectClass, 
-                as: 'subject_classes', 
+            ? await Subject.findByPk(subjectId, {
                 include: [
-                  { 
-                    model: StudentClass, 
-                    as: 'class',
-                    include: [{
-                      model: db.sections,
-                      as: 'sections'
-                    }]
-                  },
-                  {
-                    model: db.sections,
-                    as: 'section',
-                    attributes: ['id', 'section_name', 'class_id'] // Explicitly list columns
-                  }
-                ] 
-              }
-            ],
-          })
-        : null;
+                    {
+                        model: SubjectClass,
+                        as: 'subject_classes',
+                        include: [
+                            {
+                                model: StudentClass,
+                                as: 'class',
+                                attributes: ['id', 'class_name']
+                            },
+                            {
+                                model: db.sections,
+                                as: 'section',
+                                attributes: ['id', 'section_name', 'class_id']
+                            }
+                        ]
+                    }
+                ],
+            })
+            : null;
 
         // Fetch all subjects with their class and section associations
         const subjects = await Subject.findAll({
-            include: [
-                {
-                    model: SubjectClass,
-                    as: 'subject_classes',
-                    include: [
-                        { 
-                            model: StudentClass, 
-                            as: 'class',
-                            include: [{
-                                model: db.sections,
-                                as: 'sections'
-                            }]
-                        },
-                        {
-                            model: db.sections,
-                            as: 'section'
-                        }
-                    ]
-                }
-            ],
-            order: [['name', 'ASC']] // Optional: sort subjects alphabetically
+            include: [{
+                model: SubjectClass,
+                as: 'subject_classes',
+                separate: true,
+                include: [
+                    {
+                        model: StudentClass,
+                        as: 'class',
+                        attributes: ['id', 'class_name']
+                    },
+                    {
+                        model: db.sections,
+                        as: 'section',
+                        attributes: ['id', 'section_name', 'class_id'],
+
+                    }
+                ]
+            }],
+            order: [['name', 'ASC']]
         });
 
         // Get all classes with their sections for the form dropdowns
         const listclass = await StudentClass.findAll({
             include: [{
                 model: db.sections,
-                as: 'sections'
+                as: 'sections',
+                attributes: ['id', 'section_name']
             }],
-            order: [['class_name', 'ASC']] // Optional: sort classes alphabetically
+            order: [['class_name', 'ASC']]
+        });
+        const listsection = await StudentClass.findAll();
+        const teacherlist = await Teacher.findAll({
+            order: [['name', 'ASC']]
         });
 
-        const teacherlist = await Teacher.findAll({
-            order: [['name', 'ASC']] // Optional: sort teachers alphabetically
-        });
 
         res.render("subjects/subjectform", {
             errorFields,
             oldInput,
             listclass,
+            listsection,
             teacherlist,
             subjectData,
             subjects,
@@ -99,6 +97,8 @@ const loadSubjectForm = async (req, res) => {
         res.status(500).send("Server Error");
     }
 };
+
+
 const addOrUpdateSubject = async (req, res) => {
     try {
         const { name, passmarks, fullmarks, section_mapping } = req.body;
