@@ -1,13 +1,13 @@
 require("dotenv").config();
 const app = require("./app");
-const db = require("./models"); 
+const db = require("./models");
 const PORT = process.env.PORT || 5001;
 
 db.sequelize
   .authenticate()
   // .then(() => {
-  //     console.log('Database connected...');
-  //     return db.sequelize.sync({ alter: true });
+  //   console.log("Database connected...");
+  //   return db.sequelize.sync({ alter: true });
   // })
   .then(() => {
     console.log("Database synced");

@@ -1,25 +1,23 @@
 module.exports = (sequelize, DataTypes) => {
-  return sequelize.define("subject", {
+  return sequelize.define("subjects", {
     name: {
       type: DataTypes.STRING(100),
       allowNull: false,
-      unique: true
+      unique: true,
     },
-    passmarks: { 
-      type: DataTypes.INTEGER, 
+    passmarks: {
+      type: DataTypes.INTEGER,
       allowNull: false,
       validate: {
-        min: 0
-      }
+        min: 0,
+      },
     },
-    fullmarks: { 
-      type: DataTypes.INTEGER, 
+    fullmarks: {
+      type: DataTypes.INTEGER,
       allowNull: false,
       validate: {
-        min: 1
-      }
-    }
+        min: 1,
+      },
+    },
   });
 };
-
-  

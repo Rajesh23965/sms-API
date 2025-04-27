@@ -2,8 +2,27 @@ const { Op } = require("sequelize");
 const validator = require("validator");
 const db = require("../../models");
 const ExamTypeModel = db.exams;
+const ExamResultModel = db.examResults;
 
 const loadExamForm = async (req, res) => {
+  const examTypeList = await ExamTypeModel.findAll();
+  const error = req.session.error || "";
+  const success = req.session.success || "";
+  const examTypeId = req.session.examTypeId || "";
+
+  req.session.error = null;
+  req.session.success = null;
+  req.session.examTypeId = null;
+
+  res.render("exam/examform", {
+    examTypeList,
+    error,
+    success,
+    examTypeId,
+  });
+};
+
+const loadExamTypeForm = async (req, res) => {
   const error = req.session.error || "";
   const success = req.session.success || "";
   const oldInput = req.session.oldInput || {};
@@ -145,16 +164,118 @@ const deleteExamType = async (req, res) => {
   }
 };
 
-module.exports = {
-  addorupdateExamType,
+const searchresult = async (req, res) => {
+  try {
+    const searchedText = (req.query.q || "").trim();
+
+    // If no search query is provided
+    if (!searchedText) return res.json({});
+
+    // Try to find the student with related class and section
+    const result = await db.students.findOne({
+      where: {
+        admission_no: searchedText,
+      },
+      include: [
+        {
+          model: db.classes,
+          as: "class",
+          attributes: ["id", "class_name", "numeric_name"],
+          include: [
+            {
+              model: db.subjects,
+              as: "subjects",
+              attributes: ["id", "name", "code"],
+            },
+          ], // Adding the subjects associated with the class
+        },
+        {
+          model: db.sections,
+          as: "section",
+          attributes: ["id", "section_name"],
+        },
+      ],
+    });
+
+    // If no student found, return empty object
+    if (!result) {
+      return res.status(404).json({ message: "Student not found" });
+    }
+
+    // Returning the found student
+    res.json(result);
+  } catch (error) {
+    console.error("Search error:", error);
+
+    // Return a 500 error with a more descriptive message
+    res.status(500).json({
+      error: "Server error while searching.",
+      message: error.message || "An unknown error occurred.",
+    });
+  }
+};
+
+// adjust path as needed
+
+const addstudentsMarks = async (req, res) => {
+  try {
+    const { admissionNumber, examType, ...subjectMarks } = req.body;
+
+    // res.send(req.body);
+
+    if (!admissionNumber && !examType) {
+      req.session.error = "Registration number & Exam type are required.";
+      return req.render("/exams/exam-form");
+    }
+
+    const student = await db.students.findOne({
+      where: { admission_no: admissionNumber },
+    });
+
+    if (!student) {
+      return res.status(404).json({ message: "Student not found." });
+    }
+
+    const studentId = student.id;
+
+    const marksToSave = [];
+
+    for (const [subjectCode, marks] of Object.entries(subjectMarks)) {
+      if (!marks) continue;
+
+      marksToSave.push({
+        student_id: studentId,
+        exam_id: examType,
+        subject_code: subjectCode,
+        marks: marks,
+      });
+    }
+
+    // res.send(marksToSave);
+
+    if (marksToSave.length === 0) {
+      return res.status(400).json({ message: "No marks provided." });
+    }
+
+    // Bulk insert all marks
+    await ExamResultModel.bulkCreate(marksToSave);
+    req.session.success = "Marks added successfully";
+    req.session.examTypeId = examType ?? "";
+
+    return res.redirect("/exams/exam-form");
+  } catch (error) {
+    console.error("Error saving student marks:", error);
+    return res
+      .status(500)
+      .json({ message: "Server error while saving marks." });
+  }
 };
 
 module.exports = {
-  addorupdateExamType,
-};
-
-module.exports = {
-  loadExamForm,
+  loadExamTypeForm,
   addorupdateExamType,
   deleteExamType,
+  loadExamForm,
+  searchresult,
+  addstudentsMarks,
 };

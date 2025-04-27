@@ -6,21 +6,21 @@ module.exports = (sequelize, DataTypes) => {
       email: DataTypes.STRING(100),
       phone: DataTypes.STRING(20),
       image: DataTypes.STRING(100),
-      gender: DataTypes.ENUM('male', 'female', 'others'),
+      gender: DataTypes.ENUM("male", "female", "others"),
       qualification: DataTypes.STRING(100),
       address: DataTypes.TEXT,
       class_id: {
-        type: DataTypes.INTEGER, 
-        allowNull: true, 
+        type: DataTypes.INTEGER,
+        allowNull: true,
         references: {
-          model: 'classes', 
-          key: 'id'
-        }
+          model: "classes",
+          key: "id",
+        },
       },
       section_id: DataTypes.TEXT,
       subject_id: {
         type: DataTypes.TEXT,
-        allowNull: true
+        allowNull: true,
       },
       joining_date: DataTypes.DATE,
       status: DataTypes.STRING(10),
@@ -33,4 +33,3 @@ module.exports = (sequelize, DataTypes) => {
     }
   );
 };
-
