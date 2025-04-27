@@ -3,7 +3,7 @@ const session = require("express-session");
 const flash = require("connect-flash");
 const cors = require("cors");
 const path = require("path");
-const initRoutes = require("./routes/initRoutes"); // updated path
+const initRoutes = require("./routes/initRoutes");
 require("dotenv").config();
 
 const app = express();
@@ -35,7 +35,7 @@ app.use((req, res, next) => {
   next();
 });
 
-// ✅ This handles all your /students and /classes routes
+
 initRoutes(app);
 
 // Dashboard route

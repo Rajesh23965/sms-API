@@ -9,6 +9,22 @@ module.exports = (sequelize, DataTypes) => {
       gender: DataTypes.ENUM("male", "female", "others"),
       qualification: DataTypes.STRING(100),
       address: DataTypes.TEXT,
+<<<<<<< HEAD
+=======
+      class_id: {
+        type: DataTypes.INTEGER, 
+        allowNull: true, 
+        references: {
+          model: 'classes', 
+          key: 'id'
+        }
+      },
+      section_id: DataTypes.TEXT,
+      subject_id: {
+        type: DataTypes.TEXT,
+        allowNull: true
+      },
+>>>>>>> main
       joining_date: DataTypes.DATE,
       status: DataTypes.STRING(10),
     },
@@ -20,3 +36,7 @@ module.exports = (sequelize, DataTypes) => {
     }
   );
 };
+<<<<<<< HEAD
+=======
+
+>>>>>>> main

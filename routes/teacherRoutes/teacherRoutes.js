@@ -6,6 +6,6 @@ router.get("/teacher-form", teacherController.loadteacherform);
 router.post("/api/teacher", teacherController.addorupdateteacher);
 router.get("/teacher-list", teacherController.loadteacherlist);
 router.post("/get-sections", teacherController.getSectionsByClasses);
-
-module.exports = router;
+router.post("/get-subjects", teacherController.getSubjectsBySections);
+router.get("/delete-teachers/:id", teacherController.deleteTeacher);
 module.exports = router;
