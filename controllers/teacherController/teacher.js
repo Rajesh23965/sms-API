@@ -80,7 +80,11 @@ const addorupdateteacher = async (req, res) => {
     ];
 
     const missingFields = requiredFields.filter(
-      (field) => !teacherData[field] || (Array.isArray(teacherData[field]) ? teacherData[field].length === 0 : teacherData[field].toString().trim() === "")
+      (field) =>
+        !teacherData[field] ||
+        (Array.isArray(teacherData[field])
+          ? teacherData[field].length === 0
+          : teacherData[field].toString().trim() === "")
     );
 
     if (missingFields.length) {
@@ -93,16 +97,25 @@ const addorupdateteacher = async (req, res) => {
       where: { email: teacherData.email },
     });
 
-    if (existingEmail && (!teacherId || existingEmail.id !== parseInt(teacherId))) {
-      req.flash("error", "Email already exists.");
-      req.flash("oldInput", teacherData);
-      req.flash("errorFields", JSON.stringify(["email"]));
-      return res.redirect(redirectURL);
+    if (existingEmail) {
+      if (!teacherId || (parseInt(existingEmail.id) !== parseInt(teacherId))) {
+        req.flash("error", "Email already exists.");
+        req.flash("oldInput", teacherData);
+        req.flash("errorFields", JSON.stringify(["email"]));
+        return res.redirect(redirectURL);
+      }
     }
 
-    const classIds = Array.isArray(teacherData.class_id) ? teacherData.class_id.join(",") : teacherData.class_id;
-    const sectionIds = Array.isArray(teacherData.section_id) ? teacherData.section_id.join(",") : teacherData.section_id;
-    const subjectIds = Array.isArray(teacherData.subject_id) ? teacherData.subject_id.join(",") : teacherData.subject_id;
+
+    const classIds = Array.isArray(teacherData.class_id)
+      ? teacherData.class_id.join(",")
+      : teacherData.class_id;
+    const sectionIds = Array.isArray(teacherData.section_id)
+      ? teacherData.section_id.join(",")
+      : teacherData.section_id;
+    const subjectIds = Array.isArray(teacherData.subject_id)
+      ? teacherData.subject_id.join(",")
+      : teacherData.subject_id;
 
     const teacherPayload = {
       name: teacherData.name,
