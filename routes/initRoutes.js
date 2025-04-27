@@ -5,11 +5,12 @@ const studentRoutes = require("./studentRoutes/studentRoutes");
 const classRoutes = require("./classRoutes/classRoutes");
 const teacherRoutes = require("./teacherRoutes/teacherRoutes");
 const sectionRoutes = require("./sectionRoutes/sectionRoutes");
-
+const subjectRoutes = require("./subjectRoutes/subjectRoutes");
 router.use("/students", studentRoutes);
 router.use("/classes", classRoutes);
 router.use("/teachers", teacherRoutes);
 router.use("/sections", sectionRoutes);
+router.use("/subjects", subjectRoutes);
 
 module.exports = (app) => {
   app.use("/", router);

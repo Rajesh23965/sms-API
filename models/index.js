@@ -16,6 +16,7 @@ db.parents = require("./userManage/parents.js")(sequelize, DataTypes);
 db.classes = require("./classModel/classes.js")(sequelize, DataTypes);
 db.sections = require("./classModel/sections.js")(sequelize, DataTypes);
 db.teachers = require("./userManage/teacher.js")(sequelize, DataTypes);
+db.teacherSchedule = require("./userManage/teacher_schedule.js")(sequelize, DataTypes);
 db.students = require("./userManage/student.js")(sequelize, DataTypes);
 db.subjects = require("./classModel/subject.js")(sequelize, DataTypes);
 db.studentSubjects = require("./classModel/student_subject.js")(

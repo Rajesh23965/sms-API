@@ -1,41 +1,91 @@
 module.exports = (db) => {
-  // ========== Class-Related ==========
-  db.sections.belongsTo(db.classes, { foreignKey: "class_id" }); // Section belongs to a Class
-  db.subjects.belongsTo(db.classes, { foreignKey: "class_id" }); // Subject belongs to a Class
-  db.students.belongsTo(db.classes, { foreignKey: "class_id" }); // Student belongs to a Class
+  // ========== Class & Section ==========
+  db.sections.belongsTo(db.classes, { foreignKey: "class_id" });
+  db.classes.hasMany(db.sections, { foreignKey: "class_id", as: "sections" });
 
-  db.classes.hasMany(db.sections, { foreignKey: "class_id", as: "sections" }); // Class has many sections
-  db.sections.belongsTo(db.classes, { foreignKey: "class_id" }); // Section belongs to a Class
+  // ========== Student ==========
+  db.students.belongsTo(db.classes, { foreignKey: "class_id" });
+  db.students.belongsTo(db.sections, { foreignKey: "section_id" });
 
-  // ========== Section-Related ==========
-  db.students.belongsTo(db.sections, { foreignKey: "section_id" }); // Student belongs to a Section
-  db.teachers.belongsTo(db.sections, { foreignKey: "section_id" }); // Teacher belongs to a Section
+  // ========== Teacher ==========
+  db.teachers.belongsTo(db.classes, { foreignKey: "class_id", onDelete: 'NO ACTION', onUpdate: 'CASCADE' });
+  db.teachers.belongsTo(db.sections, { foreignKey: "section_id" });
 
-  // ========== Subject-Related ==========
-  db.studentSubjects.belongsTo(db.subjects, { foreignKey: "subject_id" }); // Student-Subject belongs to Subject
-  db.teachers.belongsTo(db.subjects, { foreignKey: "subject_id" }); // Teacher teaches a Subject
+  db.classes.hasMany(db.teachers, { foreignKey: "class_id" });
 
-  // ========== Teacher-Related ==========
-  db.teachers.belongsTo(db.classes, { foreignKey: "class_id" }); // Teacher assigned to a Class
+  // ========== Subject ==========
+  db.subjects.hasMany(db.subjectCode, { foreignKey: "subject_id" });
+  db.subjectCode.belongsTo(db.subjects, { foreignKey: "subject_id" });
 
-  // ========== Student-Subject Mapping ==========
-  db.studentSubjects.belongsTo(db.students, { foreignKey: "student_id" }); // Student-Subject belongs to Student
+  db.subjects.hasMany(db.subjectClass, { foreignKey: 'subject_id', as: 'subject_classes' });
+  db.subjectClass.belongsTo(db.subjects, { foreignKey: 'subject_id', as: 'subject' });
 
-  // ========== Exam & Result ==========
-  db.examResults.belongsTo(db.exams, { foreignKey: "exam_id" }); // ExamResult belongs to Exam
-  db.examResults.belongsTo(db.students, { foreignKey: "student_id" }); // ExamResult belongs to Student
-  db.examResults.belongsTo(db.subjects, { foreignKey: "subject_id" }); // ExamResult belongs to Subject
+  db.subjectClass.belongsTo(db.classes, { foreignKey: 'class_id', as: 'class' });
+  db.subjectClass.belongsTo(db.sections, { foreignKey: 'section_id', as: 'section' });
+
+  db.subjects.hasMany(db.subjectTeacher, { foreignKey: 'subject_id', as: 'subject_teachers' });
+  db.subjectTeacher.belongsTo(db.subjects, { foreignKey: 'subject_id' });
+
+  db.subjectTeacher.belongsTo(db.teachers, { foreignKey: 'teacher_id', as: 'teacher' });
+
+  // ========== Many-to-Many via Pivot Tables ==========
+  db.subjects.belongsToMany(db.classes, {
+    through: db.subjectClass,
+    foreignKey: 'subject_id',
+    as: 'classes'
+  });
+
+  db.classes.belongsToMany(db.subjects, {
+    through: db.subjectClass,
+    foreignKey: 'class_id',
+    as: 'subjects'
+  });
+
+  db.subjects.belongsToMany(db.teachers, {
+    through: db.subjectTeacher,
+    foreignKey: 'subject_id',
+    as: 'teachers'
+  });
+
+  db.teachers.belongsToMany(db.subjects, {
+    through: db.subjectTeacher,
+    foreignKey: 'teacher_id',
+    as: 'subjects'
+  });
+
+  // ========== Student-Subject ==========
+  db.studentSubjects.belongsTo(db.students, { foreignKey: "student_id" });
+  db.studentSubjects.belongsTo(db.subjects, { foreignKey: "subject_id" });
+
+  // ========== Exams & Results ==========
+  db.examResults.belongsTo(db.exams, { foreignKey: "exam_id" });
+  db.examResults.belongsTo(db.students, { foreignKey: "student_id" });
+  db.examResults.belongsTo(db.subjects, { foreignKey: "subject_id" });
 
   // ========== Attendance ==========
-  db.attendance.belongsTo(db.students, { foreignKey: "student_id" }); // Attendance belongs to Student
+  db.attendance.belongsTo(db.students, { foreignKey: "student_id" });
 
-  // ========== Fees & Payments ==========
-  db.fees.belongsTo(db.students, { foreignKey: "student_id" }); // Fee belongs to Student
-  db.payments.belongsTo(db.fees, { foreignKey: "fee_id" }); // Payment belongs to Fee
-
-  // ========== Subject has many codes ==========
-  db.subjects.hasMany(db.subjectCode, { foreignKey: 'subject_id' });
-  db.subjectCode.belongsTo(db.subjects, { foreignKey: 'subject_id' });
+  // ========== Fees ==========
+  db.fees.belongsTo(db.students, { foreignKey: "student_id" });
+  db.payments.belongsTo(db.fees, { foreignKey: "fee_id" });
 
 
+// In your models association file
+db.teachers.hasMany(db.teacherSchedule, { foreignKey: 'teacher_id' });
+db.teacherSchedule.belongsTo(db.teachers, { foreignKey: 'teacher_id' });
+
+db.subjects.hasMany(db.teacherSchedule, { foreignKey: 'subject_id' });
+db.teacherSchedule.belongsTo(db.subjects, { foreignKey: 'subject_id' });
+
+db.classes.hasMany(db.teacherSchedule, { foreignKey: 'class_id' });
+db.teacherSchedule.belongsTo(db.classes, { foreignKey: 'class_id' });
+
+db.sections.hasMany(db.teacherSchedule, { foreignKey: 'section_id' });
+db.teacherSchedule.belongsTo(db.sections, { foreignKey: 'section_id' });
+
+db.sections.hasMany(db.subjectClass, { foreignKey: 'section_id' });
+db.subjectClass.belongsTo(db.sections, { foreignKey: 'section_id' });
+
+db.subjects.hasMany(db.subjectClass, { foreignKey: 'subject_id' });
+db.subjectClass.belongsTo(db.subjects, { foreignKey: 'subject_id' });
 };
