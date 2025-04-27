@@ -2,8 +2,16 @@ const { Op } = require("sequelize");
 const validator = require("validator");
 const db = require("../../models");
 const ExamTypeModel = db.exams;
+const ClassModel = db.classes;
+const StudentModel = db.students;
+const SubjectModel = db.subjects;
+const SectionModel = db.sections;
 
 const loadExamForm = async (req, res) => {
+  res.render("exam/examform");
+};
+
+const loadExamTypeForm = async (req, res) => {
   const error = req.session.error || "";
   const success = req.session.success || "";
   const oldInput = req.session.oldInput || {};
@@ -145,16 +153,65 @@ const deleteExamType = async (req, res) => {
   }
 };
 
-module.exports = {
-  addorupdateExamType,
+const searchresult = async (req, res) => {
+  const searchedText = (req.query.q || "").trim();
+  const searchedType = (req.query.type || "").trim();
+
+  try {
+    let results = [];
+
+    if (searchedType === "exam_type") {
+      results = await ExamTypeModel.findAll({
+        where: {
+          name: { [Op.like]: `%${searchedText}%` },
+        },
+        limit: 10,
+      });
+    } else if (searchedType === "class") {
+      results = await ClassModel.findAll({
+        where: {
+          class_name: { [Op.like]: `%${searchedText}%` },
+        },
+        limit: 10,
+      });
+    } else if (searchedType === "subject") {
+      results = await SubjectModel.findAll({
+        where: {
+          name: { [Op.like]: `%${searchedText}%` },
+        },
+        limit: 10,
+      });
+    } else if (searchedType === "section") {
+      results = await SectionModel.findAll({
+        where: {
+          section_name: { [Op.like]: `%${searchedText}%` },
+        },
+        limit: 10,
+      });
+    } else if (searchedType === "student") {
+      results = await StudentModel.findAll({
+        where: {
+          [Op.or]: [
+            { first_name: { [Op.like]: `%${searchedText}%` } },
+            { middle_name: { [Op.like]: `%${searchedText}%` } },
+            { last_name: { [Op.like]: `%${searchedText}%` } },
+          ],
+        },
+        limit: 10,
+      });
+    }
+
+    res.json(results);
+  } catch (error) {
+    console.error("Search error:", error);
+    res.status(500).json({ error: "Server error while searching." });
+  }
 };
 
 module.exports = {
-  addorupdateExamType,
-};
-
-module.exports = {
-  loadExamForm,
+  loadExamTypeForm,
   addorupdateExamType,
   deleteExamType,
+  loadExamForm,
+  searchresult,
 };

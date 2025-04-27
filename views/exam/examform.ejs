@@ -1,0 +1,109 @@
+<%- include("../layouts/header")%>
+<div class="container-fluid">
+    <div class="row justify-content-center">
+      <div class="col-lg-12">
+        <div class="card shadow-lg rounded-0">
+          <div
+            class="card-header bg-dark-subtle text-capitalize d-flex justify-content-between align-items-center"
+          >
+            <h3><i class="fas fa-user-graduate me-2"></i>Exam setup</h3>
+          </div>
+  
+          <div class="card-body p-2 border">
+            <% if (success) { %>
+            <div
+              class="alert alert-success alert-dismissible fade show"
+              role="alert"
+            >
+              <%= success %>
+              <button
+                type="button"
+                class="btn-close"
+                data-bs-dismiss="alert"
+                aria-label="Close"
+              ></button>
+            </div>
+            <% } %> <% if (error !="") { %>
+            <div
+              class="alert alert-danger alert-dismissible fade show"
+              role="alert"
+            >
+              <%= error %>
+              <button
+                type="button"
+                class="btn-close"
+                data-bs-dismiss="alert"
+                aria-label="Close"
+              ></button>
+            </div>
+            <% } %>           
+  
+            <div class="col-sm-12 col-md-12 col-lg-12">
+              
+                <form action="/submit-marks" method="POST">
+                    <div class="row mb-3">
+                      <!-- Exam Type -->
+                      <div class="col-md-3 position-relative">
+                        <label for="exam_type" class="form-label">Exam Type</label>
+                        <input type="text" id="exam_type" class="form-control" placeholder="Search exam type..." onkeyup="searchDropdown('exam_type')" autocomplete="off">
+                        <div id="exam_type_dropdown" class="dropdown-menu w-100"></div>
+                      </div>
+                  
+                      <!-- Class -->
+                      <div class="col-md-3 position-relative">
+                        <label for="class" class="form-label">Class</label>
+                        <input type="text" id="class" class="form-control" placeholder="Search class..." onkeyup="searchDropdown('class')" autocomplete="off">
+                        <div id="class_dropdown" class="dropdown-menu w-100"></div>
+                      </div>
+                  
+                      <!-- Section -->
+                      <div class="col-md-3 position-relative">
+                        <label for="section" class="form-label">Section</label>
+                        <input type="text" id="section" class="form-control" placeholder="Search section..." onkeyup="searchDropdown('section')" autocomplete="off">
+                        <div id="section_dropdown" class="dropdown-menu w-100"></div>
+                      </div>
+                  
+                      <!-- Subject -->
+                      <div class="col-md-3 position-relative">
+                        <label for="subject" class="form-label">Subject</label>
+                        <input type="text" id="subject" class="form-control" placeholder="Search subject..." onkeyup="searchDropdown('subject')" autocomplete="off">
+                        <div id="subject_dropdown" class="dropdown-menu w-100"></div>
+                      </div>
+                      
+                    </div>
+                  
+                    <div class="row mb-3">
+                      <!-- student -->
+                      <div class="col-md-5 position-relative">
+                        <label for="student" class="form-label">Student</label>
+                        <input type="text" id="student" class="form-control" placeholder="Search student..." onkeyup="searchDropdown('student')" autocomplete="off">
+                        <div id="student_dropdown" class="dropdown-menu w-100"></div>
+                      </div>
+                  
+                      <!-- Marks -->
+                      <div class="col-md-2">
+                        <label for="obtained_marks" class="form-label">Obtained Marks</label>
+                        <input type="number" id="obtained_marks" name="obtained_marks" class="form-control" required>
+                      </div>
+                      <div class="mb-12">
+                        <label for="remarks" class="form-label">Remarks (optional)</label>
+                        <textarea id="remarks" name="remarks" rows="3" class="form-control" placeholder="Any comments..."></textarea>
+                      </div>
+                      
+                      <div class="text-end mt-2">
+                        <button type="submit" class="btn btn-success">Submit Marks</button>
+                      </div>
+                    </div>           
+                    
+                  
+                    
+                  </form>
+                  
+              
+            </div>            
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+<%- include("../layouts/footer")%>
