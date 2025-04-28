@@ -1,3 +1,4 @@
+const { Op } = require("sequelize");
 const db = require("../../models");
 const Subject = db.subjects;
 const SubjectClass = db.subjectClass;
@@ -18,10 +19,19 @@ const loadSubjectForm = async (req, res) => {
         req.session.success = null;
         req.session.error = null;
 
-        // Pagination parameters
+        // Pagination and search parameters
         const page = parseInt(req.query.page) || 1;
         const limit = parseInt(req.query.limit) || 10;
         const offset = (page - 1) * limit;
+        const searchQuery = req.query.search || '';
+
+        // Build the where clause for search
+        const whereClause = {};
+        if (searchQuery) {
+            whereClause[Op.or] = [
+                { name: { [Op.like]: `%${searchQuery}%` } },
+            ];
+        }
 
         // Fetch subject data with all associations if editing
         const subjectData = subjectId
@@ -49,6 +59,7 @@ const loadSubjectForm = async (req, res) => {
 
         // Fetch paginated subjects with their class and section associations
         const { count, rows: subjects } = await Subject.findAndCountAll({
+            where: whereClause,
             include: [{
                 model: SubjectClass,
                 as: 'subject_classes',
@@ -66,7 +77,8 @@ const loadSubjectForm = async (req, res) => {
                     }
                 ]
             }],
-            order: [['name', 'DESC']],
+            distinct: true,
+            order: [['name', 'ASC']],
             limit,
             offset
         });
@@ -79,10 +91,6 @@ const loadSubjectForm = async (req, res) => {
                 attributes: ['id', 'section_name']
             }],
             order: [['class_name', 'ASC']]
-        });
-        const listsection = await StudentClass.findAll();
-        const teacherlist = await Teacher.findAll({
-            order: [['name', 'ASC']]
         });
 
         // Calculate pagination details
@@ -98,13 +106,12 @@ const loadSubjectForm = async (req, res) => {
             errorFields,
             oldInput,
             listclass,
-            listsection,
-            teacherlist,
             subjectData,
             subjects,
             subjectId,
             success,
             error,
+            searchQuery,
             pagination: {
                 totalItems: count,
                 currentPage: page,
@@ -120,10 +127,10 @@ const loadSubjectForm = async (req, res) => {
         });
     } catch (err) {
         console.error('Error in loadSubjectForm:', err);
-        res.status(500).send("Server Error");
+        req.flash('error', 'Error loading subject form');
+        res.redirect('/subjects/subject-form');
     }
 };
-
 
 const addOrUpdateSubject = async (req, res) => {
     try {

@@ -125,7 +125,7 @@
                           <%= cls.class_name %>
                         </label>
                       </div>
-                      <!-- Sections container -->
+                      
                       <div id="sections_<%= cls.id %>" class="sections-container ms-4" style="display: none">
                         <% if (cls.sections && cls.sections.length > 0) { %> 
                           <% cls.sections.forEach(section => { %>
@@ -159,9 +159,26 @@
                 </button>
               </form>
             </div>
-            <div class="flex justify-content-start mb-3 items-center gap-2 mt-4 md:mt-0">
-              <label for="limitSelect">Show</label>
-            <select class="border border-gray-300 rounded-md p-2" style="width: auto;" onchange="changeLimit(this)">
+            <!-- Add this after the alert messages -->
+<div class="flex justify-content-between mb-3 items-center gap-2 mt-4 md:mt-0">
+  <div class="grid grid-cols-1">
+    <form method="GET" action="/subjects/subject-form" class="flex items-center gap-2">
+      <input 
+        type="search" 
+        name="search" 
+        class="border-2 border-gray-600 rounded-lg p-2" 
+        placeholder="Search by subject, class, or section"
+        value="<%= searchQuery || '' %>"
+      >
+      <button type="submit" class="btn btn-primary">Search</button>
+      <% if (searchQuery) { %>
+        <a href="/subjects/subject-form" class="btn btn-secondary">Clear</a>
+      <% } %>
+    </form>
+  </div>
+  <div class="">
+    <label for="limitSelect">Show</label>
+    <select class="border border-gray-300 rounded-md p-2" style="width: auto;" onchange="changeLimit(this)">
       <option value="5" <%= pagination.limit == 5 ? 'selected' : '' %>>5</option>
       <option value="10" <%= pagination.limit == 10 ? 'selected' : '' %>>10</option>
       <option value="25" <%= pagination.limit == 25 ? 'selected' : '' %>>25</option>
@@ -170,6 +187,7 @@
     </select>
     <span>entries</span>
   </div>
+</div>
             <% if (subjects && subjects.length > 0) { %>
             <div class="">
               <table class="table table-bordered table-hover">
@@ -245,55 +263,55 @@
   
  
       
-    <nav aria-label="Page navigation">
-      <ul class="pagination pagination-sm mb-0">
-        <% if (pagination.hasPreviousPage) { %>
-          <li class="page-item">
-            <a class="page-link" href="/subjects/subject-form?page=1&limit=<%= pagination.limit %>" aria-label="First">
-              <span aria-hidden="true"><i class="fa-solid fa-angles-left"></i> <i class="fa-solid fa-angles-left"></i></span>
-            </a>
-          </li>
-          <li class="page-item">
-            <a class="page-link" href="/subjects/subject-form?page=<%= pagination.previousPage %>&limit=<%= pagination.limit %>" aria-label="Previous">
-              <span aria-hidden="true"><i class="fa-solid fa-angles-left"></i></span>
-            </a>
-          </li>
-        <% } else { %>
-          <li class="page-item disabled">
-            <span class="page-link"><i class="fa-solid fa-angles-left"></i><i class="fa-solid fa-angles-left"></i></span>
-          </li>
-          <li class="page-item disabled">
-            <span class="page-link"><i class="fa-solid fa-angles-left"></i></span>
-          </li>
-        <% } %>
+          <nav aria-label="Page navigation">
+  <ul class="pagination pagination-sm mb-0">
+    <% if (pagination.hasPreviousPage) { %>
+      <li class="page-item">
+        <a class="page-link" href="/subjects/subject-form?page=1&limit=<%= pagination.limit %><%= searchQuery ? `&search=${encodeURIComponent(searchQuery)}` : '' %>" aria-label="First">
+          <span aria-hidden="true"><i class="fa-solid fa-angles-left"></i> <i class="fa-solid fa-angles-left"></i></span>
+        </a>
+      </li>
+      <li class="page-item">
+        <a class="page-link" href="/subjects/subject-form?page=<%= pagination.previousPage %>&limit=<%= pagination.limit %><%= searchQuery ? `&search=${encodeURIComponent(searchQuery)}` : '' %>" aria-label="Previous">
+          <span aria-hidden="true"><i class="fa-solid fa-angles-left"></i></span>
+        </a>
+      </li>
+    <% } else { %>
+      <li class="page-item disabled">
+        <span class="page-link"><i class="fa-solid fa-angles-left"></i><i class="fa-solid fa-angles-left"></i></span>
+      </li>
+      <li class="page-item disabled">
+        <span class="page-link"><i class="fa-solid fa-angles-left"></i></span>
+      </li>
+    <% } %>
 
-        <% for (let i = pagination.paginationStart; i <= pagination.paginationEnd; i++) { %>
-          <li class="page-item <%= i === pagination.currentPage ? 'active' : '' %>">
-            <a class="page-link" href="/subjects/subject-form?page=<%= i %>&limit=<%= pagination.limit %>"><%= i %></a>
-          </li>
-        <% } %>
+    <% for (let i = pagination.paginationStart; i <= pagination.paginationEnd; i++) { %>
+      <li class="page-item <%= i === pagination.currentPage ? 'active' : '' %>">
+        <a class="page-link" href="/subjects/subject-form?page=<%= i %>&limit=<%= pagination.limit %><%= searchQuery ? `&search=${encodeURIComponent(searchQuery)}` : '' %>"><%= i %></a>
+      </li>
+    <% } %>
 
-        <% if (pagination.hasNextPage) { %>
-          <li class="page-item">
-            <a class="page-link" href="/subjects/subject-form?page=<%= pagination.nextPage %>&limit=<%= pagination.limit %>" aria-label="Next">
-              <span aria-hidden="true"><i class="fa-solid fa-angles-right"></i></span>
-            </a>
-          </li>
-          <li class="page-item">
-            <a class="page-link" href="/subjects/subject-form?page=<%= pagination.totalPages %>&limit=<%= pagination.limit %>" aria-label="Last">
-              <span aria-hidden="true"><i class="fa-solid fa-angles-right"></i><i class="fa-solid fa-angles-right"></i></span>
-            </a>
-          </li>
-        <% } else { %>
-          <li class="page-item disabled">
-            <span class="page-link"><i class="fa-solid fa-angles-right"></i></span>
-          </li>
-          <li class="page-item disabled">
-            <span class="page-link"><i class="fa-solid fa-angles-right"></i> <i class="fa-solid fa-angles-right"></i></span>
-          </li>
-        <% } %>
-      </ul>
-    </nav>
+    <% if (pagination.hasNextPage) { %>
+      <li class="page-item">
+        <a class="page-link" href="/subjects/subject-form?page=<%= pagination.nextPage %>&limit=<%= pagination.limit %><%= searchQuery ? `&search=${encodeURIComponent(searchQuery)}` : '' %>" aria-label="Next">
+          <span aria-hidden="true"><i class="fa-solid fa-angles-right"></i></span>
+        </a>
+      </li>
+      <li class="page-item">
+        <a class="page-link" href="/subjects/subject-form?page=<%= pagination.totalPages %>&limit=<%= pagination.limit %><%= searchQuery ? `&search=${encodeURIComponent(searchQuery)}` : '' %>" aria-label="Last">
+          <span aria-hidden="true"><i class="fa-solid fa-angles-right"></i><i class="fa-solid fa-angles-right"></i></span>
+        </a>
+      </li>
+    <% } else { %>
+      <li class="page-item disabled">
+        <span class="page-link"><i class="fa-solid fa-angles-right"></i></span>
+      </li>
+      <li class="page-item disabled">
+        <span class="page-link"><i class="fa-solid fa-angles-right"></i> <i class="fa-solid fa-angles-right"></i></span>
+      </li>
+    <% } %>
+  </ul>
+</nav>
 
 </div>
 <% } %>

@@ -27,10 +27,25 @@ document.addEventListener('DOMContentLoaded', function () {
   });
 });
 
+// function changeLimit(select) {
+//   const limit = select.value;
+//   const url = new URL(window.location.href);
+//   url.searchParams.set('limit', limit);
+//   url.searchParams.set('page', 1);
+//   window.location.href = url.toString();
+// }
 function changeLimit(select) {
   const limit = select.value;
   const url = new URL(window.location.href);
+  const searchQuery = url.searchParams.get('search') || '';
+  
   url.searchParams.set('limit', limit);
   url.searchParams.set('page', 1);
+  
+  // Preserve search query if it exists
+  if (searchQuery) {
+    url.searchParams.set('search', searchQuery);
+  }
+  
   window.location.href = url.toString();
 }
