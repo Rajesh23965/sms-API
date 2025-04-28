@@ -42,9 +42,38 @@
             ></button>
           </div>
           <% } %>
+          <div class="flex justify-content-between mb-3 items-center gap-2 md:mt-0 px-2">
+            <div class="grid grid-cols-1">
+              <form method="GET" action="/teachers/teacher-list" class="flex items-center gap-2">
+                <input 
+                  type="search" 
+                  name="search" 
+                  class="border-2 border-gray-600 rounded-lg p-2" 
+                  placeholder="Search by name"
+                  value="<%= searchQuery || '' %>"
+                >
+                <button type="submit" class="btn btn-primary">Search</button>
+                <% if (searchQuery) { %>
+                  <a href="/teachers/teacher-list" class="btn btn-secondary">Clear</a>
+                <% } %>
+              </form>
+              
+            </div>
+            <div class="">
 
-          <table class="table table-bordered table-hover">
-            <thead class="table-light">
+              <label for="limitSelect">Show</label>
+              <select class="border border-gray-300 rounded-md p-2" style="width: auto;" onchange="changeLimit(this)">
+                <option value="2" <%= pagination.limit == 2 ? 'selected' : '' %>>2</option>
+                <option value="10" <%= pagination.limit == 10 ? 'selected' : '' %>>10</option>
+                <option value="25" <%= pagination.limit == 25 ? 'selected' : '' %>>25</option>
+                <option value="50" <%= pagination.limit == 50 ? 'selected' : '' %>>50</option>
+                <option value="100" <%= pagination.limit == 100 ? 'selected' : '' %>>100</option>
+              </select>
+              <span>entries</span>
+            </div>
+          </div>
+          <table class="table table-bordered  table-hover">
+            <thead class="table-light ">
               <tr>
                 <th>S.N</th>
                 <th>Teacher name</th>
@@ -60,13 +89,13 @@
               <tr>
                 <td><%= ++i %></td>
                 <td><%= tl.name %></td>
-                <td><%= tl.class_id %></td>
-                <td><%= tl.section_id %></td>
+                <td><%= tl.class?.class_name %></td> 
+                <td><%= tl.section_id%></td>
                 <td><%=tl.subject_id%></td>
                 <td>
                   <a
                     class="btn btn-outline-success fa fa-edit"
-                    href="/teachers/teacher-form?<%= 'teacherId=' + tl.id %>"
+                    href="/teachers/teacher-form?<%= '=' + tl.id %>"
                   ></a>
                   <a
                     class="btn btn-outline-danger fa fa-trash"
@@ -80,6 +109,61 @@
             </tbody>
           </table>
         </div>
+        <div class="d-flex justify-content-between align-items-center px-4">
+              <div>
+                Showing <%= pagination.startEntry %> to <%= pagination.endEntry %> of <%= pagination.totalItems %> entries
+              </div>
+            
+              <nav aria-label="Page navigation">
+                <ul class="pagination pagination-sm mb-0">
+                  <% if (pagination.hasPreviousPage) { %>
+                    <li class="page-item">
+                      <a class="page-link" href="/teachers/teacher-list?page=1&limit=<%= pagination.limit %><%= searchQuery ? `&search=${encodeURIComponent(searchQuery)}` : '' %>" aria-label="First">
+                        <span aria-hidden="true"><i class="fa-solid fa-angles-left"></i><i class="fa-solid fa-angles-left"></i></span>
+                      </a>
+                    </li>
+                    <li class="page-item">
+                      <a class="page-link" href="/teachers/teacher-list?page=<%= pagination.previousPage %>&limit=<%= pagination.limit %><%= searchQuery ? `&search=${encodeURIComponent(searchQuery)}` : '' %>" aria-label="Previous">
+                        <span aria-hidden="true"><i class="fa-solid fa-angle-left"></i></span>
+                      </a>
+                    </li>
+                  <% } else { %>
+                    <li class="page-item disabled">
+                      <span class="page-link"><i class="fa-solid fa-angles-left"></i><i class="fa-solid fa-angles-left"></i></span>
+                    </li>
+                    <li class="page-item disabled">
+                      <span class="page-link"><i class="fa-solid fa-angle-left"></i></span>
+                    </li>
+                  <% } %>
+            
+                  <% for(let i = pagination.paginationStart; i <= pagination.paginationEnd; i++) { %>
+                    <li class="page-item <%= pagination.currentPage === i ? 'active' : '' %>">
+                      <a class="page-link" href="/teachers/teacher-list?page=<%= i %>&limit=<%= pagination.limit %><%= searchQuery ? `&search=${encodeURIComponent(searchQuery)}` : '' %>"><%= i %></a>
+                    </li>
+                  <% } %>
+            
+                  <% if (pagination.hasNextPage) { %>
+                    <li class="page-item">
+                      <a class="page-link" href="/teachers/teacher-list?page=<%= pagination.nextPage %>&limit=<%= pagination.limit %><%= searchQuery ? `&search=${encodeURIComponent(searchQuery)}` : '' %>" aria-label="Next">
+                        <span aria-hidden="true"><i class="fa-solid fa-angle-right"></i></span>
+                      </a>
+                    </li>
+                    <li class="page-item">
+                      <a class="page-link" href="/teachers/teacher-list?page=<%= pagination.totalPages %>&limit=<%= pagination.limit %><%= searchQuery ? `&search=${encodeURIComponent(searchQuery)}` : '' %>" aria-label="Last">
+                        <span aria-hidden="true"><i class="fa-solid fa-angles-right"></i><i class="fa-solid fa-angles-right"></i></span>
+                      </a>
+                    </li>
+                  <% } else { %>
+                    <li class="page-item disabled">
+                      <span class="page-link"><i class="fa-solid fa-angle-right"></i></span>
+                    </li>
+                    <li class="page-item disabled">
+                      <span class="page-link"><i class="fa-solid fa-angles-right"></i><i class="fa-solid fa-angles-right"></i></span>
+                    </li>
+                  <% } %>
+                </ul>
+              </nav>
+            </div>
       </div>
     </div>
   </div>

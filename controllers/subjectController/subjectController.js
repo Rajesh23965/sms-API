@@ -18,7 +18,12 @@ const loadSubjectForm = async (req, res) => {
         req.session.success = null;
         req.session.error = null;
 
-        // Fetch subject data with all associations
+        // Pagination parameters
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 10;
+        const offset = (page - 1) * limit;
+
+        // Fetch subject data with all associations if editing
         const subjectData = subjectId
             ? await Subject.findByPk(subjectId, {
                 include: [
@@ -42,8 +47,8 @@ const loadSubjectForm = async (req, res) => {
             })
             : null;
 
-        // Fetch all subjects with their class and section associations
-        const subjects = await Subject.findAll({
+        // Fetch paginated subjects with their class and section associations
+        const { count, rows: subjects } = await Subject.findAndCountAll({
             include: [{
                 model: SubjectClass,
                 as: 'subject_classes',
@@ -58,11 +63,12 @@ const loadSubjectForm = async (req, res) => {
                         model: db.sections,
                         as: 'section',
                         attributes: ['id', 'section_name', 'class_id'],
-
                     }
                 ]
             }],
-            order: [['name', 'ASC']]
+            order: [['name', 'DESC']],
+            limit,
+            offset
         });
 
         // Get all classes with their sections for the form dropdowns
@@ -79,6 +85,14 @@ const loadSubjectForm = async (req, res) => {
             order: [['name', 'ASC']]
         });
 
+        // Calculate pagination details
+        const totalPages = Math.ceil(count / limit);
+        const hasNextPage = page < totalPages;
+        const hasPreviousPage = page > 1;
+        const nextPage = hasNextPage ? page + 1 : null;
+        const previousPage = hasPreviousPage ? page - 1 : null;
+        const paginationStart = Math.max(1, page - 2);
+        const paginationEnd = Math.min(totalPages, page + 2);
 
         res.render("subjects/subjectform", {
             errorFields,
@@ -90,7 +104,19 @@ const loadSubjectForm = async (req, res) => {
             subjects,
             subjectId,
             success,
-            error
+            error,
+            pagination: {
+                totalItems: count,
+                currentPage: page,
+                totalPages,
+                hasNextPage,
+                hasPreviousPage,
+                nextPage,
+                previousPage,
+                paginationStart,
+                paginationEnd,
+                limit
+            }
         });
     } catch (err) {
         console.error('Error in loadSubjectForm:', err);

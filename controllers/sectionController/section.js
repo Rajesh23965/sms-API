@@ -20,7 +20,7 @@ const loadsectionform = async (req, res) => {
           {
             model: ClassList,
             as: "class", 
-            attributes: ['name'],
+            attributes: ['class_name'],
           },
         ],
       });

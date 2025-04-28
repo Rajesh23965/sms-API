@@ -68,23 +68,20 @@ input::placeholder {
   top: 0;
   position: sticky;
   width: var(--sidebar-width);
-<<<<<<< HEAD
-=======
+
   height: 100vh;
   background: #1e1e2f;
->>>>>>> 502d06e07e4a7b3203b711b41ab22cb05305b48e
   color: white;
   display: flex;
   flex-direction: column;
   transition: width var(--transition);
-<<<<<<< HEAD
+
   overflow: hidden;
   background: linear-gradient(135deg, #1a1b1d, #453258f7, #181817, #0c0118);
   animation: gradientBG 50s ease infinite;
-=======
+
   overflow-x: hidden;
   overflow-y: auto;
->>>>>>> 502d06e07e4a7b3203b711b41ab22cb05305b48e
 }
 
 .sidebar.collapsed {
@@ -267,5 +264,3 @@ input::placeholder {
   border-top-right-radius: 10px;
   border-bottom: 5px solid #dc3545;
 }
-
-

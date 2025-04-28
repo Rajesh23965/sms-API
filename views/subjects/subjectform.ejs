@@ -46,105 +46,130 @@
           </div>
           <div class="">
             <div class="">
-             <form
-  action="/subjects/subject-form<%= subjectId ? '?subjectId=' + subjectId : '' %>"
-  method="POST"
-  class="border p-4 rounded bg-light grid grid-cols-1 md:grid-cols-3 gap-4 mb-3"
->
-  <div class="mb-3">
-    <label class="form-label">Subject Name</label>
-    <input
-      type="text"
-      name="name"
-      class="form-control"
-      value="<%= subjectData?.name || oldInput.name || '' %>"
-      required
-    />
-  </div>
-
-  <div class="mb-3">
-    <label class="form-label">Full Marks</label>
-    <input
-      type="text"
-      name="fullmarks"
-      class="form-control"
-      value="<%= subjectData?.fullmarks || oldInput.fullmarks || '' %>"
-      required
-    />
-  </div>
-
-  <div class="mb-3">
-    <label class="form-label">Pass Marks</label>
-    <input
-      type="text"
-      name="passmarks"
-      class="form-control"
-      value="<%= subjectData?.passmarks || oldInput.passmarks || '' %>"
-      required
-    />
-  </div>
-
-  <div class="mb-3 col-span-3">
-    <label class="form-label">Classes</label>
-    <div class="form-check mb-2">
-      <input
-        class="form-check-input"
-        type="checkbox"
-        id="checkAllClasses"
-        onclick="toggleAllClasses(this)"
-      />
-      <label class="form-check-label" for="checkAllClasses">Select All</label>
-    </div>
-
-    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-      <% listclass.forEach(cls => { %>
-        <div class="mb-3">
-          <div class="form-check">
-            <input class="form-check-input class-checkbox"
-              type="checkbox" name="class_id[]" value="<%= cls.id %>"
-              id="class_<%= cls.id %>" data-class-id="<%= cls.id %>"
-              onchange="toggleSections(this)" <%=
-              (subjectData?.subject_classes?.find(sc => sc.class_id === cls.id) || (oldInput.class_id &&
-              oldInput.class_id.includes(cls.id.toString()))) ? 'checked' : '' %> />
-            <label class="form-check-label" for="class_<%= cls.id %>">
-              <%= cls.class_name %>
-            </label>
-          </div>
-
-          <!-- Sections container for this class -->
-          <div id="sections_<%= cls.id %>" class="sections-container ms-4" style="display: none">
-            <% if (cls.sections && cls.sections.length > 0) { %>
-              <% cls.sections.forEach(section => { %>
-                <div class="form-check">
+              <form
+                action="/subjects/subject-form<%= subjectId ? '?subjectId=' + subjectId : '' %>"
+                method="POST"
+                class="border p-4 rounded bg-light grid grid-cols-1 md:grid-cols-3 gap-4 mb-3"
+              >
+                <div class="mb-3">
+                  <label class="form-label">Subject Name</label>
                   <input
-                    class="form-check-input section-checkbox"
-                    type="checkbox"
-                    name="section_mapping[]"
-                    value="<%= cls.id %>_<%= section.id %>"
-                    id="section_<%= cls.id %>_<%= section.id %>"
-                    data-section-id="<%= section.id %>"
+                    type="text"
+                    name="name"
+                    class="form-control"
+                    value="<%= subjectData?.name || oldInput.name || '' %>"
+                    required
                   />
-                  <label class="form-check-label" for="section_<%= cls.id %>_<%= section.id %>">
-                    <%= section.section_name %>
-                  </label>
                 </div>
-              <% }) %>
-            <% } else { %>
-              <p class="text-muted small">No sections available</p>
-            <% } %>
-          </div>
-        </div>
-      <% }) %>
-    </div>
-  </div>
 
-  <button type="submit" class="btn btn-success btn-lg w-full">
-    <i class="fas fa-paper-plane me-2"></i><%= subjectId ? 'Update' : 'Create' %> Subject
-  </button>
-</form>
+                <div class="mb-3">
+                  <label class="form-label">Full Marks</label>
+                  <input
+                    type="text"
+                    name="fullmarks"
+                    class="form-control"
+                    value="<%= subjectData?.fullmarks || oldInput.fullmarks || '' %>"
+                    required
+                  />
+                </div>
 
+                <div class="mb-3">
+                  <label class="form-label">Pass Marks</label>
+                  <input
+                    type="text"
+                    name="passmarks"
+                    class="form-control"
+                    value="<%= subjectData?.passmarks || oldInput.passmarks || '' %>"
+                    required
+                  />
+                </div>
+
+                <div class="mb-3 col-span-3">
+                  <label class="form-label">Classes</label>
+                  <div class="form-check mb-2">
+                    <input
+                      class="form-check-input"
+                      type="checkbox"
+                      id="checkAllClasses"
+                      onclick="toggleAllClasses(this)"
+                    />
+                    <label class="form-check-label" for="checkAllClasses"
+                      >Select All</label
+                    >
+                  </div>
+
+                  <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                    <% 
+                      // Define the correct order
+                      const classOrder = ['One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten'];
+                      
+                      // Create a sorted copy of the classes array
+                      const sortedClasses = listclass.slice().sort((a, b) => {
+                        return classOrder.indexOf(a.class_name) - classOrder.indexOf(b.class_name);
+                      });
+                      
+                      // Render the sorted classes
+                      sortedClasses.forEach(cls => { 
+                    %>
+                    <div class="mb-3">
+                      <div class="form-check">
+                        <input class="form-check-input class-checkbox"
+                          type="checkbox" name="class_id[]" value="<%= cls.id %>"
+                          id="class_<%= cls.id %>" data-class-id="<%= cls.id %>"
+                          onchange="toggleSections(this)" <%=
+                          (subjectData?.subject_classes?.find(sc => sc.class_id
+                          === cls.id) || (oldInput.class_id &&
+                          oldInput.class_id.includes(cls.id.toString()))) ?
+                          'checked' : '' %> />
+                        <label class="form-check-label" for="class_<%= cls.id %>">
+                          <%= cls.class_name %>
+                        </label>
+                      </div>
+                      <!-- Sections container -->
+                      <div id="sections_<%= cls.id %>" class="sections-container ms-4" style="display: none">
+                        <% if (cls.sections && cls.sections.length > 0) { %> 
+                          <% cls.sections.forEach(section => { %>
+                            <div class="form-check">
+                              <input
+                                class="form-check-input section-checkbox"
+                                type="checkbox"
+                                name="section_mapping[]"
+                                value="<%= cls.id %>_<%= section.id %>"
+                                id="section_<%= cls.id %>_<%= section.id %>"
+                                data-section-id="<%= section.id %>"
+                              />
+                              <label class="form-check-label" for="section_<%= cls.id %>_<%= section.id %>">
+                                <%= section.section_name %>
+                              </label>
+                            </div>
+                          <% }) %> 
+                        <% } else { %>
+                          <p class="text-muted small">No sections available</p>
+                        <% } %>
+                      </div>
+                    </div>
+                    <% }) %>
+                  </div>
+                </div>
+                
+
+                <button type="submit" class="btn btn-success btn-lg w-full">
+                  <i class="fas fa-paper-plane me-2"></i><%= subjectId ?
+                  'Update' : 'Create' %> Subject
+                </button>
+              </form>
             </div>
-
+            <div class="flex justify-content-start mb-3 items-center gap-2 mt-4 md:mt-0">
+              <label for="limitSelect">Show</label>
+            <select class="border border-gray-300 rounded-md p-2" style="width: auto;" onchange="changeLimit(this)">
+      <option value="5" <%= pagination.limit == 5 ? 'selected' : '' %>>5</option>
+      <option value="10" <%= pagination.limit == 10 ? 'selected' : '' %>>10</option>
+      <option value="25" <%= pagination.limit == 25 ? 'selected' : '' %>>25</option>
+      <option value="50" <%= pagination.limit == 50 ? 'selected' : '' %>>50</option>
+      <option value="100" <%= pagination.limit == 100 ? 'selected' : '' %>>100</option>
+    </select>
+    <span>entries</span>
+  </div>
             <% if (subjects && subjects.length > 0) { %>
             <div class="">
               <table class="table table-bordered table-hover">
@@ -162,15 +187,31 @@
                     <td><%= index + 1 %></td>
                     <td><%= subject.name %></td>
 
+                  
                     <td class="">
-                      <% if (subject.subject_classes &&
-                      subject.subject_classes.length > 0) { %> <% const
-                      sectionOutput = []; subject.subject_classes.forEach(sc =>
-                      { if (sc.class && sc.section) {
-                      sectionOutput.push(`${sc.class.class_name}:${sc.section.section_name}`);
-                      } }); %> <%= sectionOutput.join(', ') %> <% } %>
-                    </td>
+  <% if (subject.subject_classes && subject.subject_classes.length > 0) { %> 
+    <% 
+      const classGroups = {}; 
+      subject.subject_classes.forEach(sc => {
+        if (sc.class && sc.section) {
+          const className = sc.class.class_name;
+          const sectionName = sc.section.section_name;
+          
+          if (!classGroups[className]) {
+            classGroups[className] = [];
+          }
+          classGroups[className].push(sectionName);
+        }
+      });
 
+      const sectionOutput = Object.keys(classGroups).map(className => {
+        return `${className}(${classGroups[className].join(',')})`;
+      });
+
+    %> 
+    <%= sectionOutput.join(', ') %> 
+  <% } %>
+</td>
                     <td>
                       <a
                         class="btn btn-outline-success fa fa-edit"
@@ -188,11 +229,74 @@
                   <% }) %>
                 </tbody>
               </table>
+              
             </div>
             <% } else { %>
             <div class="alert alert-info">No subjects available</div>
             <% } %>
           </div>
+          <% if (subjects && subjects.length > 0) { %>
+        <div class="d-flex justify-content-between align-items-center mt-3">
+          <div class="text-muted">
+            Showing <%= (pagination.currentPage - 1) * pagination.limit + 1 %> to 
+            <%= Math.min(pagination.currentPage * pagination.limit, pagination.totalItems) %> of 
+            <%= pagination.totalItems %> entries
+          </div>
+  
+ 
+      
+    <nav aria-label="Page navigation">
+      <ul class="pagination pagination-sm mb-0">
+        <% if (pagination.hasPreviousPage) { %>
+          <li class="page-item">
+            <a class="page-link" href="/subjects/subject-form?page=1&limit=<%= pagination.limit %>" aria-label="First">
+              <span aria-hidden="true"><i class="fa-solid fa-angles-left"></i> <i class="fa-solid fa-angles-left"></i></span>
+            </a>
+          </li>
+          <li class="page-item">
+            <a class="page-link" href="/subjects/subject-form?page=<%= pagination.previousPage %>&limit=<%= pagination.limit %>" aria-label="Previous">
+              <span aria-hidden="true"><i class="fa-solid fa-angles-left"></i></span>
+            </a>
+          </li>
+        <% } else { %>
+          <li class="page-item disabled">
+            <span class="page-link"><i class="fa-solid fa-angles-left"></i><i class="fa-solid fa-angles-left"></i></span>
+          </li>
+          <li class="page-item disabled">
+            <span class="page-link"><i class="fa-solid fa-angles-left"></i></span>
+          </li>
+        <% } %>
+
+        <% for (let i = pagination.paginationStart; i <= pagination.paginationEnd; i++) { %>
+          <li class="page-item <%= i === pagination.currentPage ? 'active' : '' %>">
+            <a class="page-link" href="/subjects/subject-form?page=<%= i %>&limit=<%= pagination.limit %>"><%= i %></a>
+          </li>
+        <% } %>
+
+        <% if (pagination.hasNextPage) { %>
+          <li class="page-item">
+            <a class="page-link" href="/subjects/subject-form?page=<%= pagination.nextPage %>&limit=<%= pagination.limit %>" aria-label="Next">
+              <span aria-hidden="true"><i class="fa-solid fa-angles-right"></i></span>
+            </a>
+          </li>
+          <li class="page-item">
+            <a class="page-link" href="/subjects/subject-form?page=<%= pagination.totalPages %>&limit=<%= pagination.limit %>" aria-label="Last">
+              <span aria-hidden="true"><i class="fa-solid fa-angles-right"></i><i class="fa-solid fa-angles-right"></i></span>
+            </a>
+          </li>
+        <% } else { %>
+          <li class="page-item disabled">
+            <span class="page-link"><i class="fa-solid fa-angles-right"></i></span>
+          </li>
+          <li class="page-item disabled">
+            <span class="page-link"><i class="fa-solid fa-angles-right"></i> <i class="fa-solid fa-angles-right"></i></span>
+          </li>
+        <% } %>
+      </ul>
+    </nav>
+
+</div>
+<% } %>
         </div>
       </div>
     </div>

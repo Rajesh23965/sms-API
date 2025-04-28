@@ -1,9 +1,11 @@
+const { Op } = require("sequelize");
 const db = require("../../models");
 const Teacher = db.teachers;
 const ClasList = db.classes;
 const Subject = db.subjects;
 const Section = db.sections;
 const SubjectClass = db.subjectClass
+
 const loadteacherform = async (req, res) => {
   try {
     const success = req.flash("success")[0];
@@ -152,13 +154,78 @@ const addorupdateteacher = async (req, res) => {
   }
 };
 
-
 const loadteacherlist = async (req, res) => {
-  const teacherlist = await Teacher.findAll();
-  res.render("teachers/teacherlist", {
-    teacherlist,
-  });
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const offset = (page - 1) * limit;
+    const searchQuery = req.query.search || '';
+    const whereClause = {};
+    if (searchQuery) {
+      whereClause[Op.or] = [
+        { name: { [Op.like]: `%${searchQuery}%` } },
+      ];
+    }
+
+    const { count, rows: teacherlist } = await Teacher.findAndCountAll({
+      where: whereClause,
+      limit, offset, order: [["createdAt", "DESC"]],
+      include: [{
+        model: ClasList,
+        as: "class",
+        attributes: ['class_name']
+      }, {
+        model: Section,
+        as: "section",
+        attributes: ["section_name"]
+      }, {
+        model: Subject,
+        as: "subjects",
+        attributes: ["name"],
+        through: { attributes: [] },
+      },], distinct: true
+    });
+    const totalPages = Math.ceil(count / limit);
+    const startEntry = offset + 1;
+    const endEntry = Math.min(offset + limit, count);
+    const hasNextPage = page < totalPages;
+    const hasPreviousPage = page > 1;
+    const nextPage = hasNextPage ? page + 1 : null;
+    const previousPage = hasPreviousPage ? page - 1 : null;
+    const paginationStart = Math.max(1, page - 2);
+    const paginationEnd = Math.min(totalPages, page + 2);
+    const success = req.session.success || "";
+    const error = req.session.error || "";
+    req.session.success = null;
+    req.session.error = null;
+  
+    res.render("teachers/teacherlist", {
+      teacherlist,
+      searchQuery, pagination: {
+        totalPages: count,
+        currentPage: page,
+        totalPages,
+        hasNextPage,
+        hasPreviousPage,
+        nextPage,
+        previousPage,
+        paginationStart,
+        paginationEnd,
+        limit,
+        startEntry,
+        endEntry
+      },
+      success,
+      error
+    })
+  } catch (error) {
+    console.error("Error loading teacher list:", error);
+    req.session.error = "Unable to load teacher list.";
+    res.redirect("/teachers/teacher-list");
+  }
 };
+
+
 
 
 const getSectionsByClasses = async (req, res) => {
