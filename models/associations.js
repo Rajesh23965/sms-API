@@ -9,6 +9,43 @@ module.exports = (db) => {
     foreignKey: "section_id",
     as: "section",
   });
+  db.subjectClass.belongsTo(db.subjectCode, {
+    foreignKey: 'subject_id',  // This links to the subject_id in subjectClass
+    targetKey: 'subject_id',   // This links to the subject_id in subjectCode
+    as: 'subjectCode'          // Use a different alias to avoid confusion
+  });
+  
+
+
+  db.subjectCode.belongsTo(db.subjectClass, {
+    foreignKey: 'subject_id',
+    as: 'subjectClassInfo'  // Changed from 'subjectClass' to make unique
+  });
+
+  // SubjectClass has many SubjectCodes (with unique alias)
+  db.subjectClass.hasMany(db.subjectCode, {
+    foreignKey: 'subject_id',
+    as: 'subjectCodeList'  // Changed from 'subjectCodes' to make unique
+  });
+
+  // ========== Exam Results Associations ==========
+  // ExamResults belongs to SubjectCode
+  db.examResults.belongsTo(db.subjectCode, {
+    foreignKey: 'subject_code',
+    targetKey: 'code',
+    as: 'subjectCodeRef'  // Changed from 'subjectCode' to make unique
+  });
+
+  // SubjectCode has many ExamResults
+  db.subjectCode.hasMany(db.examResults, {
+    foreignKey: 'subject_code',
+    sourceKey: 'code',
+    as: 'examResultsList'  // Changed from 'examResults' to make unique
+  });
+
+
+
+
 
   // ========== Teacher ==========
   db.teachers.belongsTo(db.classes, {
@@ -20,8 +57,8 @@ module.exports = (db) => {
   db.classes.hasMany(db.teachers, { foreignKey: "class_id" });
 
   // ========== Subject ==========
-  db.subjects.hasMany(db.subjectCode, { foreignKey: "subject_id" });
-  db.subjectCode.belongsTo(db.subjects, { foreignKey: "subject_id" });
+  db.subjects.hasMany(db.subjectCode, { foreignKey: "subject_id", as:"subjectCodes" });
+  db.subjectCode.belongsTo(db.subjects, { foreignKey: "subject_id",as:"name" });
 
   db.subjects.hasMany(db.subjectClass, {
     foreignKey: "subject_id",

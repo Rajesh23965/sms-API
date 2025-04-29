@@ -22,6 +22,238 @@ const loadExamForm = async (req, res) => {
   });
 };
 
+const searchresult = async (req, res) => {
+  try {
+    const searchedText = (req.query.q || "").trim();
+
+    if (!searchedText) return res.json({});
+
+
+    const student = await db.students.findOne({
+      where: {
+        admission_no: searchedText,
+      },
+      include: [
+        {
+          model: db.classes,
+          as: "class",
+          attributes: ["id", "class_name", "numeric_name"],
+        },
+        {
+          model: db.sections,
+          as: "section",
+          attributes: ["id", "section_name"],
+        },
+      ],
+    });
+
+    if (!student) {
+      return res.status(404).json({ message: "Student not found" });
+    }
+
+    // Get subject classes
+    const subjectClasses = await db.subjectClass.findAll({
+      where: {
+        class_id: student.class_id,
+        section_id: student.section_id,
+      },
+      include: [
+        {
+          model: db.subjects,
+          as: "subject",
+          attributes: ["id", "name"],
+        }
+      ],
+    });
+
+    // Get subject codes separately
+    const subjectCodes = await db.subjectCode.findAll({
+      where: {
+        class_id: student.class_id
+      },
+      attributes: ['subject_id', 'code']
+    });
+
+    // Create a map of subject_id to code for easier lookup
+    const codeMap = {};
+    subjectCodes.forEach(code => {
+      codeMap[code.subject_id] = code.code;
+    });
+
+    // Format the response
+    const response = {
+      ...student.toJSON(),
+      subjects: subjectClasses.map(sc => ({
+        id: sc.subject.id,
+        name: sc.subject.name,
+        code: codeMap[sc.subject_id] || '',
+        passmarks: sc.passmarks,
+        fullmarks: sc.fullmarks
+      }))
+    };
+
+    res.json(response);
+  } catch (error) {
+    console.error("Search error:", error);
+    res.status(500).json({
+      error: "Server error while searching.",
+      message: error.message || "An unknown error occurred.",
+    });
+  }
+};
+// adjust path as needed
+
+const addstudentsMarks = async (req, res) => {
+  try {
+    const { admissionNumber, examType, ...subjectMarks } = req.body;
+
+    if (!admissionNumber || !examType) {
+      req.session.error = "Registration number & Exam type are required.";
+      return res.redirect("/exams/exam-form");
+    }
+
+    const student = await db.students.findOne({
+      where: { admission_no: admissionNumber },
+      include: [
+        {
+          model: db.classes,
+          as: "class",
+          attributes: ["id"],
+        },
+        {
+          model: db.sections,
+          as: "section",
+          attributes: ["id"],
+        },
+      ],
+    });
+
+    if (!student) {
+      req.session.error = "Student not found.";
+      return res.redirect("/exams/exam-form");
+    }
+
+    const studentId = student.id;
+    const marksToSave = [];
+    const errors = [];
+    const subjectCodes = [];
+
+    // First get all subject classes for this student's class and section
+    const subjectClasses = await db.subjectClass.findAll({
+      where: {
+        class_id: student.class.id,
+        section_id: student.section.id,
+      },
+      include: [
+        {
+          model: db.subjects,
+          as: "subject",
+          attributes: ["id", "name"],
+        },
+        {
+          model: db.subjectCode,
+          as: "subjectCode",
+          attributes: ["code"],
+          required: false,
+        },
+      ],
+    });
+
+    // Create a map of subject codes to their full marks
+    const subjectFullMarks = {};
+    subjectClasses.forEach(sc => {
+      const code = sc.subjectCode?.code;
+      if (code) {
+        subjectFullMarks[code] = sc.fullmarks;
+      }
+    });
+
+    // Check for existing exam results for this student and exam type
+    const existingResults = await db.examResults.findAll({
+      where: {
+        student_id: studentId,
+        exam_id: examType,
+      },
+      attributes: ['subject_code'],
+    });
+
+    const existingSubjects = existingResults.map(result => result.subject_code);
+
+    // Process each subject mark
+    for (const [fieldName, marks] of Object.entries(subjectMarks)) {
+      if (!marks) continue;
+
+      if (fieldName.endsWith('_obtained')) {
+        const subjectCode = fieldName.replace('_obtained', '');
+
+        // Check for duplicate subject codes in current submission
+        if (subjectCodes.includes(subjectCode)) {
+          errors.push(`Duplicate entry for subject ${subjectCode} in this submission`);
+          continue;
+        }
+        subjectCodes.push(subjectCode);
+
+        // Check if marks already exist for this subject and exam
+        if (existingSubjects.includes(subjectCode)) {
+          errors.push(`Marks for ${subjectCode} already entered for this exam`);
+          continue;
+        }
+
+        const fullMarks = subjectFullMarks[subjectCode];
+
+        // Validate marks are numeric
+        if (isNaN(marks)) {
+          errors.push(`Marks for ${subjectCode} must be a number`);
+          continue;
+        }
+
+        const numericMarks = parseFloat(marks);
+
+        // Validate marks don't exceed full marks
+        if (fullMarks !== undefined && numericMarks > fullMarks) {
+          errors.push(`Marks for ${subjectCode} cannot exceed ${fullMarks}`);
+          continue;
+        }
+
+        // Validate marks are not negative
+        if (numericMarks < 0) {
+          errors.push(`Marks for ${subjectCode} cannot be negative`);
+          continue;
+        }
+
+        marksToSave.push({
+          student_id: studentId,
+          exam_id: examType,
+          subject_code: subjectCode,
+          marks: numericMarks,
+        });
+      }
+    }
+
+    if (errors.length > 0) {
+      req.session.error = errors.join('');
+      return res.redirect("/exams/exam-form");
+    }
+
+    if (marksToSave.length === 0) {
+      req.session.error = "No valid marks provided.";
+      return res.redirect("/exams/exam-form");
+    }
+
+    await ExamResultModel.bulkCreate(marksToSave);
+    req.session.success = "Marks added successfully";
+    req.session.examTypeId = examType;
+
+    return res.redirect("/exams/exam-form");
+  } catch (error) {
+    console.error("Error saving student marks:", error);
+    req.session.error = "Server error while saving marks.";
+    return res.redirect("/exams/exam-form");
+  }
+};
+
+
+//exam type functionality
 const loadExamTypeForm = async (req, res) => {
   const error = req.session.error || "";
   const success = req.session.success || "";
@@ -161,113 +393,6 @@ const deleteExamType = async (req, res) => {
   } catch {
     req.session.error = "Invalid Id or server error";
     return res.redirect("/exams/exam-form");
-  }
-};
-
-const searchresult = async (req, res) => {
-  try {
-    const searchedText = (req.query.q || "").trim();
-
-    // If no search query is provided
-    if (!searchedText) return res.json({});
-
-    // Try to find the student with related class and section
-    const result = await db.students.findOne({
-      where: {
-        admission_no: searchedText,
-      },
-      include: [
-        {
-          model: db.classes,
-          as: "class",
-          attributes: ["id", "class_name", "numeric_name"],
-          include: [
-            {
-              model: db.subjects,
-              as: "subjects",
-              attributes: ["id", "name", "code"],
-            },
-          ], // Adding the subjects associated with the class
-        },
-        {
-          model: db.sections,
-          as: "section",
-          attributes: ["id", "section_name"],
-        },
-      ],
-    });
-
-    // If no student found, return empty object
-    if (!result) {
-      return res.status(404).json({ message: "Student not found" });
-    }
-
-    // Returning the found student
-    res.json(result);
-  } catch (error) {
-    console.error("Search error:", error);
-
-    // Return a 500 error with a more descriptive message
-    res.status(500).json({
-      error: "Server error while searching.",
-      message: error.message || "An unknown error occurred.",
-    });
-  }
-};
-
-// adjust path as needed
-
-const addstudentsMarks = async (req, res) => {
-  try {
-    const { admissionNumber, examType, ...subjectMarks } = req.body;
-
-    // res.send(req.body);
-
-    if (!admissionNumber && !examType) {
-      req.session.error = "Registration number & Exam type are required.";
-      return req.render("/exams/exam-form");
-    }
-
-    const student = await db.students.findOne({
-      where: { admission_no: admissionNumber },
-    });
-
-    if (!student) {
-      return res.status(404).json({ message: "Student not found." });
-    }
-
-    const studentId = student.id;
-
-    const marksToSave = [];
-
-    for (const [subjectCode, marks] of Object.entries(subjectMarks)) {
-      if (!marks) continue;
-
-      marksToSave.push({
-        student_id: studentId,
-        exam_id: examType,
-        subject_code: subjectCode,
-        marks: marks,
-      });
-    }
-
-    // res.send(marksToSave);
-
-    if (marksToSave.length === 0) {
-      return res.status(400).json({ message: "No marks provided." });
-    }
-
-    // Bulk insert all marks
-    await ExamResultModel.bulkCreate(marksToSave);
-    req.session.success = "Marks added successfully";
-    req.session.examTypeId = examType ?? "";
-
-    return res.redirect("/exams/exam-form");
-  } catch (error) {
-    console.error("Error saving student marks:", error);
-    return res
-      .status(500)
-      .json({ message: "Server error while saving marks." });
   }
 };
 
