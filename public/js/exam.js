@@ -1,9 +1,32 @@
 $(document).ready(function () {
+  // Add input validation for marks fields
+  $(document).on("input", ".marks-input", function() {
+    const value = $(this).val();
+    const fullmarks = $(this).next('span').text().match(/\d+/)[0]; // Extract full marks from the text
+    
+    // Validate numeric input
+    if (value && !/^\d*\.?\d*$/.test(value)) {
+      $(this).addClass('is-invalid');
+      return;
+    } else {
+      $(this).removeClass('is-invalid');
+    }
+    
+    // Validate against full marks
+    if (value && parseFloat(value) > parseFloat(fullmarks)) {
+      $(this).addClass('is-invalid');
+      $(this).next('span').addClass('text-danger');
+    } else {
+      $(this).removeClass('is-invalid');
+      $(this).next('span').removeClass('text-danger');
+    }
+  });
+
   $(document).on("keyup", "#admissionno", function () {
     const admissionNumber = $(this).val();
 
-    // Always first reset all fields
-    $(".admissionNumber").html("");
+    // Reset all fields
+    $(".admissionNumber").val("");
     $(".studentName").html("");
     $(".studentClass").html("");
     $(".StudentSection").html("");
@@ -32,29 +55,35 @@ $(document).ready(function () {
 
             // Create dynamic marks input boxes for each subject
             let studentMakrsBox = "";
-            if (response.class.subjects && response.class.subjects.length > 0) {
-              response.class.subjects.forEach(function (subject) {
+            if (response.subjects && response.subjects.length > 0) {
+              response.subjects.forEach(function (subject) {
                 studentMakrsBox += `
-                  <label class="d-flex justify-content-between bg-light w-100 p-2 border">${subject.name}: 
-                    <input type="text" name="${subject.code}" class="marks-input w-25" />
+                  <label class="d-flex justify-content-between bg-light w-100 p-2 border">
+                    ${subject.name} (${subject.code}):
+                    <div class="d-flex gap-2">
+                      <input type="text" 
+                             name="${subject.code}_obtained" 
+                             class="marks-input form-control w-25" 
+                             placeholder="Obtained" 
+                             pattern="\\d*\\.?\\d*"
+                             title="Enter numbers only" />
+                      <span>/ ${subject.fullmarks} (Pass: ${subject.passmarks})</span>
+                    </div>
                   </label><br>
                 `;
               });
             } else {
-              studentMakrsBox = "No subjects available.";
+              studentMakrsBox = "No subjects available for this class/section.";
             }
 
-            // Append the dynamic marks boxes to the studentMakrsBox div
             $(".studentMakrsBox").html(studentMakrsBox);
           } else {
-            // If no student data found, show an error message
             $(".studentMakrsBox").html("No student found.");
           }
         },
         error: function () {
-          // Handle the error
           console.error("API call failed");
-          $(".studentMakrsBox").html("Registration not found");
+          $(".studentMakrsBox").html("Error searching for student.");
         },
       });
     }

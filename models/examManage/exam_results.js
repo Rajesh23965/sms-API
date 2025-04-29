@@ -23,6 +23,18 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.FLOAT,
         allowNull: false,
       },
+      status: {
+        type: DataTypes.ENUM('Pass', 'Fail'),
+        allowNull: true,
+      },
+      grade: {
+        type: DataTypes.STRING(2),
+        allowNull: true,
+      },
+      grade_point: {
+        type: DataTypes.FLOAT,
+        allowNull: true,
+      },
       createdAt: {
         type: DataTypes.DATE,
         defaultValue: DataTypes.NOW,

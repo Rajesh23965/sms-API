@@ -202,7 +202,7 @@ const loadteacherlist = async (req, res) => {
     res.render("teachers/teacherlist", {
       teacherlist,
       searchQuery, pagination: {
-        totalPages: count,
+        totalItems: count,
         currentPage: page,
         totalPages,
         hasNextPage,
