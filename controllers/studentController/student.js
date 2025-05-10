@@ -1,3 +1,4 @@
+const { Op } = require("sequelize");
 const db = require("../../models");
 const Student = db.students;
 const Province = db.province;
@@ -132,14 +133,86 @@ const generateAdmissionNo = async () => {
 
 const loadStudentList = async (req, res) => {
   try {
-    const studentlist = await Student.findAll();
-    res.render("students/studentlist", { studentlist });
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const offset = (page - 1) * limit;
+    const searchQuery = req.query.search || '';
+
+    // Build the where clause for search
+    const whereClause = {};
+    if (searchQuery) {
+      whereClause[Op.or] = [
+        { first_name: { [Op.like]: `%${searchQuery}%` } },
+        { last_name: { [Op.like]: `%${searchQuery}%` } },
+        { middle_name: { [Op.like]: `%${searchQuery}%` } },
+        { admission_no: { [Op.like]: `%${searchQuery}%` } },
+        { email: { [Op.like]: `%${searchQuery}%` } },
+        { phone: { [Op.like]: `%${searchQuery}%` } }
+      ];
+    }
+
+    const { count, rows: studentlist } = await Student.findAndCountAll({
+      where: whereClause,
+      limit,
+      offset,
+      order: [["createdAt", "DESC"]],
+      include: [
+        {
+          model: Class,
+          as: 'class',
+          attributes: ['class_name']
+        },
+        {
+          model: Section,
+          as: 'section',
+          attributes: ['section_name']
+        }
+      ]
+    });
+
+    const totalPages = Math.ceil(count / limit);
+    const startEntry = offset + 1;
+    const endEntry = Math.min(offset + limit, count);
+    const hasNextPage = page < totalPages;
+    const hasPreviousPage = page > 1;
+    const nextPage = hasNextPage ? page + 1 : null;
+    const previousPage = hasPreviousPage ? page - 1 : null;
+    const paginationStart = Math.max(1, page - 2);
+    const paginationEnd = Math.min(totalPages, page + 2);
+
+    const success = req.session.success || "";
+    const error = req.session.error || "";
+    req.session.success = null;
+    req.session.error = null;
+
+    res.render("students/studentlist", {
+      studentlist,
+      searchQuery,
+      pagination: {
+        totalItems: count,
+        currentPage: page,
+        totalPages,
+        hasNextPage,
+        hasPreviousPage,
+        nextPage,
+        previousPage,
+        paginationStart,
+        paginationEnd,
+        limit,
+        startEntry,
+        endEntry,
+      },
+      success,
+      error,
+    });
+
   } catch (error) {
     console.error("Error loading student list:", error);
     req.session.error = "Unable to load student list.";
     res.redirect("/students/student-list");
   }
 };
+
 
 const deleteStudent = async (req, res) => {
   try {

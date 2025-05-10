@@ -60,15 +60,38 @@ document.addEventListener("DOMContentLoaded", function () {
       console.error("Failed to load sections:", err);
     }
   }
-  classSelect.addEventListener("change", () => {
-    const selectedClassId = classSelect.value;
-    loadSections(selectedClassId);
-  });
 
-  // Initial load if class already selected (e.g., edit mode)
-  if (classSelect.value) {
-    loadSections(classSelect.value);
+
+  if (classSelect) {
+    classSelect.addEventListener("change", () => {
+      const selectedClassId = classSelect.value;
+      loadSections(selectedClassId);
+    });
+
+    // Initial load if class already selected
+    if (classSelect.value) {
+      loadSections(classSelect.value);
+    }
   }
+
 });
 
 
+const limitSelect = document.getElementById('limitSelect');
+if (limitSelect) {
+  limitSelect.addEventListener('change', function () {
+    const limit = this.value;
+    const url = new URL(window.location.href);
+    url.searchParams.set('limit', limit);
+    url.searchParams.set('page', 1);
+    window.location.href = url.toString();
+  });
+}
+
+function changeLimit(select) {
+  const limit = select.value;
+  const url = new URL(window.location.href);
+  url.searchParams.set('limit', limit);
+  url.searchParams.set('page', 1);
+  window.location.href = url.toString();
+}
