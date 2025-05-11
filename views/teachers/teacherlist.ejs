@@ -72,8 +72,8 @@
               <span>entries</span>
             </div>
           </div>
-          <table class="table table-bordered  table-hover">
-            <thead class="table-light ">
+          <table class="table table-bordered table-hover">
+            <thead class="table-light">
               <tr>
                 <th>S.N</th>
                 <th>Teacher name</th>
@@ -84,28 +84,32 @@
               </tr>
             </thead>
             <tbody>
-              <% if (teacherlist) { %> <% let i = 0; %> <%
-              teacherlist.forEach(function(tl) { %>
-              <tr>
-                <td><%= ++i %></td>
-                <td><%= tl.name %></td>
-                <td><%= tl.class?.class_name %></td> 
-                <td><%= tl.section_id%></td>
-                <td><%=tl.subject_id%></td>
-                <td>
-                  <a
-                    class="btn btn-outline-success fa fa-edit"
-                    href="/teachers/teacher-form?<%= '=' + tl.id %>"
-                  ></a>
-                  <a
-                    class="btn btn-outline-danger fa fa-trash"
-                    onclick="return confirm('Are you sure you want to delete this subject?');"
-                    href="/teachers/delete-teachers/<%= tl.id %>"
-                    title="Delete Teacher"
-                  ></a>
-                </td>
-              </tr>
-              <% }); %> <% } %>
+              <% if (teacherlist) { %> 
+                <% let i = 0; %> 
+                <% teacherlist.forEach(function(tl) { %>
+                  <tr>
+                    <td><%= ++i %></td>
+                    <td>
+                      <% if (tl.image) { %>
+                        <img src="/uploads/teachers/<%= tl.image %>" class="rounded-circle me-2" width="30" height="30">
+                      <% } %>
+                      <%= tl.name %>
+                    </td>
+                    <td><%= tl.classNames %></td> 
+                    <td><%= tl.sectionNames %></td>
+                    <td><%= tl.subjectNames %></td>
+                    <td>
+                      <a class="btn btn-outline-success fa fa-edit" href="/teachers/teacher-form?teacherId=<%= tl.id %>"></a>
+                      <a
+                        class="btn btn-outline-danger fa fa-trash"
+                        onclick="return confirm('Are you sure you want to delete this teacher?');"
+                        href="/teachers/delete-teachers/<%= tl.id %>"
+                        title="Delete Teacher"
+                      ></a>
+                    </td>
+                  </tr>
+                <% }); %> 
+              <% } %>
             </tbody>
           </table>
         </div>

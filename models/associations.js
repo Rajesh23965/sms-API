@@ -4,66 +4,60 @@ module.exports = (db) => {
   db.classes.hasMany(db.sections, { foreignKey: "class_id", as: "sections" });
 
   // ========== Student ==========
-  db.students.belongsTo(db.classes, { foreignKey: "class_id", as: "class" });
-  db.students.belongsTo(db.sections, {
-    foreignKey: "section_id",
-    as: "section",
-  });
+
   db.subjectClass.belongsTo(db.subjectCode, {
-    foreignKey: 'subject_id',  // This links to the subject_id in subjectClass
-    targetKey: 'subject_id',   // This links to the subject_id in subjectCode
-    as: 'subjectCode'          // Use a different alias to avoid confusion
-  });
-  
-
-
-  db.subjectCode.belongsTo(db.subjectClass, {
     foreignKey: 'subject_id',
-    as: 'subjectClassInfo'  // Changed from 'subjectClass' to make unique
+    targetKey: 'subject_id',
+    as: 'subjectCode'
   });
 
-  // SubjectClass has many SubjectCodes (with unique alias)
+
   db.subjectClass.hasMany(db.subjectCode, {
     foreignKey: 'subject_id',
-    as: 'subjectCodeList'  // Changed from 'subjectCodes' to make unique
+    as: 'subjectCodes'
   });
 
   // ========== Exam Results Associations ==========
-  // ExamResults belongs to SubjectCode
   db.examResults.belongsTo(db.subjectCode, {
     foreignKey: 'subject_code',
     targetKey: 'code',
-    as: 'subjectCodeRef'  // Changed from 'subjectCode' to make unique
+    as: 'subjectCodeRef'
   });
 
   // SubjectCode has many ExamResults
   db.subjectCode.hasMany(db.examResults, {
     foreignKey: 'subject_code',
     sourceKey: 'code',
-    as: 'examResultsList'  // Changed from 'examResults' to make unique
+    as: 'examResults'
   });
-
-
-
-
 
   // ========== Teacher ==========
   db.teachers.belongsTo(db.classes, {
     foreignKey: "class_id",
     onDelete: "NO ACTION",
     onUpdate: "CASCADE",
+    as: "class"
   });
-  db.teachers.belongsTo(db.sections, { foreignKey: "section_id" });
-  db.classes.hasMany(db.teachers, { foreignKey: "class_id" });
+  db.teachers.belongsTo(db.sections, { foreignKey: "section_id", as: "section" });
+  db.classes.hasMany(db.teachers, { foreignKey: "class_id", as: "teachers" });
+  db.sections.hasMany(db.teachers, {
+    foreignKey: "section_id",
+    as: "teachers"
+  });
 
   // ========== Subject ==========
-  db.subjects.hasMany(db.subjectCode, { foreignKey: "subject_id", as:"subjectCodes" });
-  db.subjectCode.belongsTo(db.subjects, { foreignKey: "subject_id",as:"name" });
-
+  db.subjectCode.belongsTo(db.subjects, { foreignKey: "subject_id", as: "subject" });
   db.subjects.hasMany(db.subjectClass, {
     foreignKey: "subject_id",
     as: "subject_classes",
   });
+
+
+  db.subjects.hasMany(db.subjectCode, {
+    foreignKey: "subject_id",
+    as: "subjectCodes"
+  });
+
   db.subjectClass.belongsTo(db.subjects, {
     foreignKey: "subject_id",
     as: "subject",
@@ -119,31 +113,38 @@ module.exports = (db) => {
 
   // ========== Exams & Results ==========
   db.examResults.belongsTo(db.exams, { foreignKey: "exam_id" });
-  db.examResults.belongsTo(db.students, { foreignKey: "student_id" });
+  db.examResults.belongsTo(db.students, { foreignKey: "student_id", as: 'student' });
 
-  // You should **NOT** link subject_code as FK unless you have subjectCodes table separately
-  // If you want to link subjectCode model, then use this:
-  // db.examResults.belongsTo(db.subjectCode, { foreignKey: "subject_code", targetKey: "code" });
 
   // ========== Attendance ==========
-  db.attendance.belongsTo(db.students, { foreignKey: "student_id" });
+  db.attendance.belongsTo(db.students, { foreignKey: "student_id", as: "student" });
 
   // ========== Fees ==========
-  db.fees.belongsTo(db.students, { foreignKey: "student_id" });
+  db.fees.belongsTo(db.students, { foreignKey: "student_id", as: "student" });
   db.payments.belongsTo(db.fees, { foreignKey: "fee_id" });
 
   // ========== Teacher Schedule ==========
-  db.teachers.hasMany(db.teacherSchedule, { foreignKey: "teacher_id" });
-  db.teacherSchedule.belongsTo(db.teachers, { foreignKey: "teacher_id" });
+  db.teachers.hasMany(db.teacherSchedule, {
+    foreignKey: "teacher_id", as: "schedules"
+  });
+  db.teacherSchedule.belongsTo(db.teachers, {
+    foreignKey: "teacher_id", as: "teacher"
+  });
 
-  db.subjects.hasMany(db.teacherSchedule, { foreignKey: "subject_id" });
-  db.teacherSchedule.belongsTo(db.subjects, { foreignKey: "subject_id" });
+  db.subjects.hasMany(db.teacherSchedule, { foreignKey: "subject_id", as: "schedules" });
+  db.teacherSchedule.belongsTo(db.subjects, {
+    foreignKey: "subject_id", as: "subject"
+  });
 
-  db.classes.hasMany(db.teacherSchedule, { foreignKey: "class_id" });
-  db.teacherSchedule.belongsTo(db.classes, { foreignKey: "class_id" });
+  db.classes.hasMany(db.teacherSchedule, {
+    foreignKey: "class_id", as: "schedules"
+  });
+  db.teacherSchedule.belongsTo(db.classes, { foreignKey: "class_id", as: "class" });
 
-  db.sections.hasMany(db.teacherSchedule, { foreignKey: "section_id" });
-  db.teacherSchedule.belongsTo(db.sections, { foreignKey: "section_id" });
+  db.sections.hasMany(db.teacherSchedule, {
+    foreignKey: "section_id", as: "schedules"
+  });
+  db.teacherSchedule.belongsTo(db.sections, { foreignKey: "section_id", as: "section" });
 
   // ========== Redundant Fixes ==========
   db.sections.hasMany(db.subjectClass, { foreignKey: "section_id" });
@@ -151,4 +152,95 @@ module.exports = (db) => {
 
   db.subjects.hasMany(db.subjectClass, { foreignKey: "subject_id" });
   db.subjectClass.belongsTo(db.subjects, { foreignKey: "subject_id" });
+
+
+  db.subjects.belongsToMany(db.sections, {
+    through: db.subjectClass,
+    foreignKey: "subject_id",
+    as: "sections"
+  });
+  db.sections.belongsToMany(db.subjects, {
+    through: db.subjectClass,
+    foreignKey: "section_id",
+    as: "subjects"
+  });
+
+  db.students.hasMany(db.examResults, {
+    foreignKey: 'student_id',
+    as: 'examResults'
+  });
+
+
+  // Student-Subject Relationships
+  db.students.belongsToMany(db.subjects, {
+    through: db.studentSubjects,
+    foreignKey: "student_id",
+    as: "subjects"
+  });
+
+  db.subjects.belongsToMany(db.students, {
+    through: db.studentSubjects,
+    foreignKey: "subject_id",
+    as: "students"
+  });
+  db.students.hasMany(db.attendance, {
+    foreignKey: "student_id",
+    as: "attendances"
+  });
+  db.students.hasMany(db.fees, {
+    foreignKey: "student_id",
+    as: "fees"
+  });
+  db.fees.hasMany(db.payments, {
+    foreignKey: "fee_id",
+    as: "payments"
+  });
+
+//student and academic year relation
+
+// Student to Academic History (One-to-Many)
+db.students.hasMany(db.student_academic_histories, {
+  foreignKey: 'student_id',
+  as: 'academicHistories'
+});
+
+db.student_academic_histories.belongsTo(db.students, {
+  foreignKey: 'student_id',
+  as: 'student'
+});
+
+// Class to Academic History (One-to-Many)
+db.classes.hasMany(db.student_academic_histories, {
+  foreignKey: 'class_id',
+  as: 'studentHistories'
+});
+
+db.student_academic_histories.belongsTo(db.classes, {
+  foreignKey: 'class_id',
+  as: 'class'
+});
+
+// Section to Academic History (One-to-Many)
+db.sections.hasMany(db.student_academic_histories, {
+  foreignKey: 'section_id',
+  as: 'studentHistories'
+});
+
+db.student_academic_histories.belongsTo(db.sections, {
+  foreignKey: 'section_id',
+  as: 'section'
+});
+
+
+
+db.terms.hasMany(db.exams, {
+  foreignKey: 'term_id',
+  as: 'exams'
+});
+
+db.exams.belongsTo(db.terms, {
+  foreignKey: 'term_id',
+  as: 'term'
+});
+
 };

@@ -134,7 +134,7 @@ const loadSubjectForm = async (req, res) => {
 
 const addOrUpdateSubject = async (req, res) => {
     try {
-        const { name, passmarks, fullmarks, section_mapping } = req.body;
+        const { name, passmarks, fullmarks, creditHour, section_mapping } = req.body;
         const subjectId = req.query.subjectId;
         const redirectURL = "/subjects/subject-form";
 
@@ -145,13 +145,14 @@ const addOrUpdateSubject = async (req, res) => {
                 class_id,
                 section_id,
                 passmarks,
-                fullmarks
+                fullmarks,
+                creditHour
             };
         });
 
         // Input validation
-        if (!name || !passmarks || !fullmarks || class_sections.length === 0) {
-            req.session.errorFields = ["name", "passmarks", "fullmarks", "section_mapping"];
+        if (!name || !passmarks || !fullmarks || !creditHour || class_sections.length === 0) {
+            req.session.errorFields = ["name", "passmarks", "fullmarks", "creditHour", "section_mapping"];
             req.session.oldInput = req.body;
             req.session.error = "All fields are required.";
             return res.redirect(redirectURL);
@@ -164,7 +165,6 @@ const addOrUpdateSubject = async (req, res) => {
             return res.redirect(redirectURL);
         }
 
-        // Subject prefix logic (e.g. NEP from Nepali)
         const sanitize = str => str.replace(/[^A-Z]/gi, '').toUpperCase();
         const prefix = sanitize(name).substring(0, 3);
 
@@ -181,16 +181,17 @@ const addOrUpdateSubject = async (req, res) => {
             subject.name = name;
             subject.passmarks = passmarks;
             subject.fullmarks = fullmarks;
+            subject.creditHour = creditHour;
             await subject.save();
 
-            // Remove old class-section-code mappings
+
             await SubjectClass.destroy({ where: { subject_id: subjectId } });
             await SubjectCode.destroy({ where: { subject_id: subjectId } });
 
             req.session.success = "Subject updated successfully.";
         } else {
             // Create new subject
-            subject = await Subject.create({ name, passmarks, fullmarks });
+            subject = await Subject.create({ name, passmarks, fullmarks, creditHour });
             req.session.success = "Subject added successfully.";
         }
 

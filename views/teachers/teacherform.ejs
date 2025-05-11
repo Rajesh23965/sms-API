@@ -27,7 +27,13 @@
             <h5>Teacher Details</h5>
           </div>
 
-          <form action="/teachers/api/teacher" method="POST" id="teacherForm">
+          <form action="/teachers/api/teacher<%= teacherId ? '?teacherId=' + teacherId : '' %>" method="POST" enctype="multipart/form-data" id="teacherForm">
+            <% if (teacherId) { %>
+              <input type="hidden" id="oldClassIds" value="<%= JSON.stringify(selectedClassIds) %>">
+              <input type="hidden" id="oldSectionIds" value="<%= JSON.stringify(selectedSectionIds) %>">
+              <input type="hidden" id="oldSubjectIds" value="<%= JSON.stringify(selectedSubjectIds) %>">
+            <% } %>
+            
             <div class="row p-3 bg-body-tertiary">
 
               <!-- Teacher Details Column -->
@@ -38,6 +44,15 @@
                   <div class="mb-3">
                     <label class="form-label">Teacher Name</label>
                     <input type="text" name="name" class="form-control <%= errorFields?.includes('name') ? 'is-invalid' : '' %>" placeholder="Enter Teacher Name" value="<%= oldInput?.name || '' %>" />
+                  </div>
+                  <div class="mb-3">
+                    <label class="form-label">Gender</label>
+                    <select name="gender" class="form-select <%= errorFields?.includes('gender') ? 'is-invalid' : '' %>">
+                      <option value="">Select Gender</option>
+                      <option value="male" <%= oldInput?.gender === 'male' ? 'selected' : '' %>>Male</option>
+                      <option value="female" <%= oldInput?.gender === 'female' ? 'selected' : '' %>>Female</option>
+                      <option value="others" <%= oldInput?.gender === 'others' ? 'selected' : '' %>>Others</option>
+                    </select>
                   </div>
                   <div class="mb-3">
                     <label class="form-label">Email</label>
@@ -63,6 +78,23 @@
                     <label class="form-label">Joining Date</label>
                     <input type="date" name="joining_date" class="form-control <%= errorFields?.includes('joining_date') ? 'is-invalid' : '' %>" value="<%= oldInput?.joining_date || '' %>" />
                   </div>
+                  <div class="mb-3">
+                    <label class="form-label">Photo</label>
+                    <input type="file" name="image" class="form-control <%= errorFields?.includes('image') ? 'is-invalid' : '' %>"/>
+                  </div>
+                  <% if (oldInput.image) { %>
+                    <div class="mb-3">
+                      <label class="form-label">Current Photo</label>
+                      <img src="/uploads/teachers/<%= oldInput.image %>" class="img-thumbnail" style="max-height: 150px;">
+                    </div>
+                  <% } %>
+                  <% if (oldInput.image) { %>
+                    <div class="form-check mb-3">
+                      <input class="form-check-input" type="checkbox" name="removeImage" id="removeImage">
+                      <label class="form-check-label" for="removeImage">Remove current photo</label>
+                    </div>
+                  <% } %>
+                  
                
                   <div class="mb-3">
                     <label class="form-label">Status</label>

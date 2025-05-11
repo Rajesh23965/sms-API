@@ -1,3 +1,5 @@
+const fs = require('fs');
+const path = require('path');
 const { Op } = require("sequelize");
 const db = require("../../models");
 const Teacher = db.teachers;
@@ -8,12 +10,11 @@ const SubjectClass = db.subjectClass
 
 const loadteacherform = async (req, res) => {
   try {
+    const teacherId = req.query.teacherId;
     const success = req.flash("success")[0];
     const error = req.flash("error")[0];
     const oldInput = req.flash("oldInput")[0] || {};
     const errorFields = req.flash("errorFields")[0] || [];
-
-    const teacherId = req.query.teacherId;
 
     const allClass = await ClasList.findAll();
     const allSections = await Section.findAll();
@@ -24,21 +25,65 @@ const loadteacherform = async (req, res) => {
     if (teacherId) {
       const teacher = await Teacher.findByPk(teacherId);
       if (teacher) {
-        teacherData = {
-          ...teacher.toJSON(),
-          class_id: teacher.class_id ? teacher.class_id.split(",") : [],
-          section_id: teacher.section_id ? teacher.section_id.split(",") : [],
-          subject_id: teacher.subject_id ? teacher.subject_id.split(",") : [],
+        const parseIds = (ids) => {
+          if (!ids) return [];
+          if (Array.isArray(ids)) return ids;
+          if (typeof ids === 'string') return ids.split(",").filter(Boolean);
+          return [ids.toString()];
+        };
+        const formatDate = (date) => {
+          if (!date) return '';
+          const d = new Date(date);
+          const year = d.getFullYear();
+          const month = String(d.getMonth() + 1).padStart(2, '0');
+          const day = String(d.getDate()).padStart(2, '0');
+          return `${year}-${month}-${day}`;
         };
 
+
+        teacherData = {
+          ...teacher.toJSON(),
+          class_id: parseIds(teacher.class_id),
+          section_id: parseIds(teacher.section_id),
+          subject_id: parseIds(teacher.subject_id),
+          joining_date: formatDate(teacher.joining_date)
+        };
       }
     }
 
-    const selectedClassIds = oldInput.class_id?.length ? oldInput.class_id : teacherData.class_id || [];
+    const selectedClassIds = oldInput.class_id?.length ?
+      (Array.isArray(oldInput.class_id) ? oldInput.class_id : [oldInput.class_id]) :
+      teacherData.class_id || [];
 
-    // const filteredSections = selectedClassIds.length > 0
-    //   ? allSections.filter(section => selectedClassIds.includes(section.class_id.toString()))
-    //   : [];
+    const selectedSectionIds = oldInput.section_id?.length ?
+      (Array.isArray(oldInput.section_id) ? oldInput.section_id : [oldInput.section_id]) :
+      teacherData.section_id || [];
+
+    const selectedSubjectIds = oldInput.subject_id?.length ?
+      (Array.isArray(oldInput.subject_id) ? oldInput.subject_id : [oldInput.subject_id]) :
+      teacherData.subject_id || [];
+
+    let filteredSections = [];
+    let filteredSubjects = [];
+
+    if (selectedClassIds.length > 0) {
+      filteredSections = await Section.findAll({
+        where: {
+          class_id: selectedClassIds
+        }
+      });
+
+      if (selectedSectionIds.length > 0) {
+        filteredSubjects = await Subject.findAll({
+          include: [{
+            model: Section,
+            as: 'sections',
+            where: { id: selectedSectionIds },
+            through: { attributes: [] }
+          }]
+        });
+      }
+    }
 
     res.render("teachers/teacherform", {
       success,
@@ -46,19 +91,19 @@ const loadteacherform = async (req, res) => {
       oldInput: Object.keys(oldInput).length ? oldInput : teacherData,
       errorFields,
       allClass,
-      allSections,
+      allSections: filteredSections.length ? filteredSections : allSections,
+      allSubjects: filteredSubjects.length ? filteredSubjects : allSubjects,
       selectedClassIds,
+      selectedSectionIds,
+      selectedSubjectIds,
       teacherId
     });
   } catch (error) {
     console.error("Error loading teacher form:", error);
+    req.flash("error", "Failed to load teacher form");
     res.redirect("/teachers/teacher-list");
   }
 };
-
-
-
-
 const addorupdateteacher = async (req, res) => {
   try {
     const teacherId = req.query.teacherId;
@@ -76,6 +121,7 @@ const addorupdateteacher = async (req, res) => {
       "address",
       "joining_date",
       "status",
+      "gender",
       "class_id",
       "section_id",
       "subject_id"
@@ -127,16 +173,27 @@ const addorupdateteacher = async (req, res) => {
       address: teacherData.address,
       joining_date: teacherData.joining_date,
       status: teacherData.status,
+      gender: teacherData.gender,
       class_id: classIds,
       section_id: sectionIds,
       subject_id: subjectIds,
     };
+    if (req.file) {
+      teacherPayload.image = req.file.filename;
+    }
 
     if (teacherId) {
       const teacher = await Teacher.findByPk(teacherId);
       if (!teacher) {
         req.flash("error", "Teacher not found.");
         return res.redirect("/teachers/teacher-form");
+      }
+      if (teacherData.removeImage === "on" && teacher.image) {
+        const imagePath = path.join(__dirname, '../../public/uploads/teachers', teacher.image);
+        if (fs.existsSync(imagePath)) {
+          fs.unlinkSync(imagePath);
+        }
+        teacherPayload.image = null;
       }
       await teacher.update(teacherPayload);
       req.flash("success", "Teacher updated successfully.");
@@ -145,7 +202,7 @@ const addorupdateteacher = async (req, res) => {
       req.flash("success", "Teacher added successfully.");
     }
 
-    return res.redirect("/teachers/teacher-form");
+    return res.redirect("/teachers/teacher-list");
   } catch (error) {
     console.error("Error processing teacher:", error);
     req.flash("error", "Server error. Please try again.");
@@ -160,72 +217,82 @@ const loadteacherlist = async (req, res) => {
     const limit = parseInt(req.query.limit) || 10;
     const offset = (page - 1) * limit;
     const searchQuery = req.query.search || '';
+
     const whereClause = {};
+
     if (searchQuery) {
       whereClause[Op.or] = [
         { name: { [Op.like]: `%${searchQuery}%` } },
+        { email: { [Op.like]: `%${searchQuery}%` } },
       ];
     }
 
     const { count, rows: teacherlist } = await Teacher.findAndCountAll({
       where: whereClause,
-      limit, offset, order: [["createdAt", "DESC"]],
-      include: [{
-        model: ClasList,
-        as: "class",
-        attributes: ['class_name']
-      }, {
-        model: Section,
-        as: "section",
-        attributes: ["section_name"]
-      }, {
-        model: Subject,
-        as: "subjects",
-        attributes: ["name"],
-        through: { attributes: [] },
-      },], distinct: true
+      limit,
+      offset,
+      order: [["createdAt", "DESC"]],
     });
+
+    // Fetch all classes, sections, subjects for mapping
+    const allClasses = await ClasList.findAll();
+    const allSections = await Section.findAll();
+    const allSubjects = await Subject.findAll();
+
+    // Map for fast lookup
+    const classMap = Object.fromEntries(allClasses.map(cls => [cls.id.toString(), cls.class_name]));
+    const sectionMap = Object.fromEntries(allSections.map(sec => [sec.id.toString(), sec.section_name]));
+    const subjectMap = Object.fromEntries(allSubjects.map(sub => [sub.id.toString(), sub.name]));
+
+    const formattedTeachers = teacherlist.map(teacher => {
+      const classIds = teacher.class_id?.split(",") || [];
+      const sectionIds = teacher.section_id?.split(",") || [];
+      const subjectIds = teacher.subject_id?.split(",") || [];
+
+      const classNames = classIds.map(id => classMap[id] || 'Unknown').join(", ");
+      const sectionNames = sectionIds.map(id => sectionMap[id] || 'Unknown').join(", ");
+      const subjectNames = subjectIds.map(id => subjectMap[id] || 'Unknown').join(", ");
+
+      return {
+        ...teacher.toJSON(),
+        classNames,
+        sectionNames,
+        subjectNames
+      };
+    });
+
     const totalPages = Math.ceil(count / limit);
-    const startEntry = offset + 1;
-    const endEntry = Math.min(offset + limit, count);
-    const hasNextPage = page < totalPages;
-    const hasPreviousPage = page > 1;
-    const nextPage = hasNextPage ? page + 1 : null;
-    const previousPage = hasPreviousPage ? page - 1 : null;
-    const paginationStart = Math.max(1, page - 2);
-    const paginationEnd = Math.min(totalPages, page + 2);
     const success = req.session.success || "";
     const error = req.session.error || "";
     req.session.success = null;
     req.session.error = null;
-  
+
     res.render("teachers/teacherlist", {
-      teacherlist,
-      searchQuery, pagination: {
+      teacherlist: formattedTeachers,
+      searchQuery,
+      pagination: {
         totalItems: count,
         currentPage: page,
         totalPages,
-        hasNextPage,
-        hasPreviousPage,
-        nextPage,
-        previousPage,
-        paginationStart,
-        paginationEnd,
+        hasNextPage: page < totalPages,
+        hasPreviousPage: page > 1,
+        nextPage: page < totalPages ? page + 1 : null,
+        previousPage: page > 1 ? page - 1 : null,
+        paginationStart: Math.max(1, page - 2),
+        paginationEnd: Math.min(totalPages, page + 2),
         limit,
-        startEntry,
-        endEntry
+        startEntry: offset + 1,
+        endEntry: Math.min(offset + limit, count),
       },
       success,
       error
-    })
+    });
   } catch (error) {
     console.error("Error loading teacher list:", error);
-    req.session.error = "Unable to load teacher list.";
+    req.session.error = "Failed to load teacher list.";
     res.redirect("/teachers/teacher-list");
   }
 };
-
-
 
 
 const getSectionsByClasses = async (req, res) => {
@@ -284,34 +351,85 @@ const getSubjectsBySections = async (req, res) => {
   }
 };
 
-
 const deleteTeacher = async (req, res) => {
+  let imagePath = null;
   try {
     const id = req.params.id;
     const teacher = await Teacher.findByPk(id);
+
     if (!teacher) {
-      req.session.error = "Teacher not found";
+      req.flash("error", "Teacher not found");
       return res.redirect("/teachers/teacher-list");
     }
 
+
+    if (teacher.image) {
+      try {
+        imagePath = path.join(
+          process.cwd(),
+          'public',
+          'uploads',
+          'teachers',
+          teacher.image
+        );
+
+        console.log("Attempting to delete image at:", imagePath); // Debug log
+
+
+        if (fs.existsSync(imagePath)) {
+          fs.unlinkSync(imagePath);
+          console.log(`Successfully deleted image: ${imagePath}`);
+        } else {
+          console.log(`Image not found at: ${imagePath}`);
+          const altPath = path.join(__dirname, '../public/uploads/teachers', teacher.image);
+          if (fs.existsSync(altPath)) {
+            fs.unlinkSync(altPath);
+            console.log(`Deleted image using alternative path: ${altPath}`);
+          }
+        }
+      } catch (fileError) {
+        console.error("Error deleting teacher image:", fileError);
+      }
+    }
+
     await teacher.destroy();
-    req.session.success = "Teacher Deleted Successfully";
+
+    req.flash("success", "Teacher deleted successfully");
     return res.redirect("/teachers/teacher-list");
   } catch (error) {
     console.error("Error deleting teacher:", error);
-    req.session.errorFields = ["errorFields"];
-    req.session.oldInput = req.body;
-    req.session.error = "Internal server error";
+
+    if (imagePath && fs.existsSync(imagePath)) {
+      fs.unlink(imagePath, (err) => {
+        if (err) {
+          console.error("Async deletion also failed:", err);
+        } else {
+          console.log("Image deleted successfully in async mode");
+        }
+      });
+    }
+
+    req.flash("error", "Failed to delete teacher");
     return res.redirect("/teachers/teacher-list");
   }
 };
 
-
+//Count Total Teacher
+const getTotalTeacher = async (req, res) => {
+  try {
+    const count = await Teacher.count();
+    res.json({ totalTeachers: count });
+  } catch (error) {
+    console.error("Failed to count teachers:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+};
 module.exports = {
   loadteacherform,
   addorupdateteacher,
   loadteacherlist,
   getSectionsByClasses,
   getSubjectsBySections,
-  deleteTeacher
+  deleteTeacher,
+  getTotalTeacher
 };
