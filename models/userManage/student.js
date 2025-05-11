@@ -121,14 +121,8 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.STRING(10),
         defaultValue: "active",
       },
-      class_id: {
-        type: DataTypes.INTEGER,
-        allowNull: true,
-      },
-      section_id: {
-        type: DataTypes.INTEGER,
-        allowNull: true,
-      },
+
+     
     },
     {
       timestamps: true,

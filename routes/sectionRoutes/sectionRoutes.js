@@ -7,5 +7,5 @@ const sectionController = require("../../controllers/sectionController/section")
 
 router.get("/section-form", sectionController.loadsectionform);
 router.post("/api/add-section", sectionController.addorupdateSection);
-
+router.get("/delete-section/:id",sectionController.deleteSection);
 module.exports = router;

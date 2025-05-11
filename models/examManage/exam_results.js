@@ -19,21 +19,35 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.STRING(50),
         allowNull: false,
       },
-      marks: {
+      marks_obtained: {
         type: DataTypes.FLOAT,
         allowNull: false,
       },
-      status: {
-        type: DataTypes.ENUM('Pass', 'Fail'),
-        allowNull: true,
+      grade:{
+        type:DataTypes.STRING(2)
       },
-      grade: {
-        type: DataTypes.STRING(2),
-        allowNull: true,
+      remarks:{
+        type:DataTypes.TEXT
       },
-      grade_point: {
-        type: DataTypes.FLOAT,
-        allowNull: true,
+      is_passed:{
+        type:DataTypes.BOOLEAN
+      },
+      academic_year: {
+        type: DataTypes.STRING(9),
+        allowNull: false,
+      },
+      class_id: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+      },
+      section_id: {
+        type: DataTypes.INTEGER,
+        allowNull: false
+      },
+      subject_id: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        references: { model: 'subjects', key: 'id' }
       },
       createdAt: {
         type: DataTypes.DATE,
@@ -47,6 +61,12 @@ module.exports = (sequelize, DataTypes) => {
     {
       tableName: "exam_results",
       timestamps: true,
+      indexes: [
+        {
+          unique: false,
+          fields: ['student_id','exam_id','subject_code', 'academic_year', 'class_id','subject_id']
+        }
+      ]
     }
   );
 };

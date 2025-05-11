@@ -83,6 +83,16 @@
                     required
                   />
                 </div>
+                <div class="mb-3">
+                  <label class="form-label">Credit hour</label>
+                  <input
+                    type="text"
+                    name="creditHour"
+                    class="form-control"
+                    value="<%= subjectData?.creditHour || oldInput.creditHour || '' %>"
+                    required
+                  />
+                </div>
 
                 <div class="mb-3 col-span-3">
                   <label class="form-label">Classes</label>
@@ -159,7 +169,7 @@
                 </button>
               </form>
             </div>
-            <!-- Add this after the alert messages -->
+  
 <div class="flex justify-content-between mb-3 items-center gap-2 mt-4 md:mt-0">
   <div class="grid grid-cols-1">
     <form method="GET" action="/subjects/subject-form" class="flex items-center gap-2">
@@ -195,6 +205,7 @@
                   <tr>
                     <th>S.N</th>
                     <th>Subject Name</th>
+                    <th>Credit Hour</th>
                     <th>Classes & Sections</th>
                     <th>Actions</th>
                   </tr>
@@ -204,6 +215,7 @@
                   <tr>
                     <td><%= index + 1 %></td>
                     <td><%= subject.name %></td>
+                    <td><%=subject.creditHour%></td>
 
                   
                     <td class="">

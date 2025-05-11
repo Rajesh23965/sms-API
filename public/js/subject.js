@@ -27,13 +27,6 @@ document.addEventListener('DOMContentLoaded', function () {
   });
 });
 
-// function changeLimit(select) {
-//   const limit = select.value;
-//   const url = new URL(window.location.href);
-//   url.searchParams.set('limit', limit);
-//   url.searchParams.set('page', 1);
-//   window.location.href = url.toString();
-// }
 function changeLimit(select) {
   const limit = select.value;
   const url = new URL(window.location.href);

@@ -19,7 +19,7 @@ const loadsectionform = async (req, res) => {
         include: [
           {
             model: ClassList,
-            as: "class", 
+            as: "class",
             attributes: ['class_name'],
           },
         ],
@@ -179,7 +179,28 @@ const addorupdateSection = async (req, res) => {
   }
 };
 
+const deleteSection = async (req, res) => {
+  try {
+    const id = req.params.id;
+    const section = await Section.findByPk(id);
+    if (!section) {
+      req.flash("error", "Section not found");
+      return res.redirect("/sections/section-form");
+    }
+
+    await section.destroy();
+    req.flash("success", "Section deleted successfully.");
+    return res.redirect("/sections/section-form");
+  } catch (error) {
+    console.log("Failed to delete section: ", error);
+    req.flash("error", "Internal server error.");
+    return res.redirect("/sections/section-form");
+  }
+};
+
+
 module.exports = {
   loadsectionform,
   addorupdateSection,
+  deleteSection
 };

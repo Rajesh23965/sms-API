@@ -1,0 +1,50 @@
+<%- include('../layouts/header.ejs') %>
+
+<div class="container mt-4">
+  <h2>Promotion History</h2>
+
+  <% if (history.length > 0) { %>
+  <!-- Display student info -->
+  <div class="card mb-4">
+    <div class="card-body">
+      <h5 class="card-title">Student Information</h5>
+      <p class="card-text">
+        <strong>Name:</strong>
+        <%= history[0].student.first_name %> <%= history[0].student.middle_name
+        ? history[0].student.middle_name + ' ' : '' %> <%=
+        history[0].student.last_name %>
+      </p>
+    </div>
+  </div>
+
+  <!-- Promotion history table -->
+  <table class="table table-bordered">
+    <thead>
+      <tr>
+        <th>Academic Year</th>
+        <th>Class</th>
+        <th>Section</th>
+        <th>Status</th>
+        <th>Promotion Date</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% history.forEach(record => { %>
+      <tr>
+        <td><%= record.academic_year %></td>
+        <td><%= record.class ? record.class.class_name : 'N/A' %></td>
+        <td><%= record.section ? record.section.section_name : 'N/A' %></td>
+        <td><%= record.status %></td>
+        <td><%= formatDate(record.promotion_date) %></td>
+      </tr>
+      <% }); %>
+    </tbody>
+  </table>
+  <% } else { %>
+  <div class="alert alert-info">
+    No promotion history found for this student.
+  </div>
+  <% } %>
+</div>
+
+<%- include('../layouts/footer') %>

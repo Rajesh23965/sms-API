@@ -24,6 +24,7 @@ body {
   );
   background-size: 400% 400%;
   animation: gradientBG 50s ease infinite;
+  
 }
 .row {
   margin: 0px !important;
@@ -53,7 +54,7 @@ body {
   border-bottom-left-radius: 5px !important;
   border-bottom-right-radius: 5px !important;
   border-color: #cacdcd;
-  box-shadow: 1px 1.5px 0px #00000085;
+  /* box-shadow: 1px 1.5px 0px #00000085; */
 }
 input,
 select:valid {
@@ -81,7 +82,7 @@ input::placeholder {
   animation: gradientBG 50s ease infinite;
 
   overflow-x: hidden;
-  overflow-y: auto;
+
 }
 
 .sidebar.collapsed {
@@ -194,14 +195,14 @@ input::placeholder {
   padding: 20px;
 }
 
-.card {
+/* .card {
   background: #aea1c7;
   border-radius: 16px;
   padding: 20px;
   box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
   transition: all var(--transition);
   transform: translateY(0);
-}
+} */
 
 .dashboard-card:hover {
   transform: translateY(-6px);
@@ -224,7 +225,7 @@ input::placeholder {
 
 @media (max-width: 768px) {
   .sidebar {
-    position: fixed;
+    position: sticky;
     height: 100%;
     z-index: 1000;
     left: 0;
@@ -256,6 +257,7 @@ input::placeholder {
 .classBox {
   height: 200px;
   overflow: scroll;
+
 }
 .title-header {
   padding: 10px;
@@ -263,4 +265,169 @@ input::placeholder {
   border-top-left-radius: 10px;
   border-top-right-radius: 10px;
   border-bottom: 5px solid #dc3545;
+}
+  .timeline {
+    position: relative;
+    padding: 20px 0;
+  }
+  
+  .timeline::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 50%;
+    width: 2px;
+    background: #ddd;
+    transform: translateX(-50%);
+  }
+  
+  .timeline-item {
+    position: relative;
+    margin-bottom: 30px;
+  }
+  
+  .timeline-badge {
+    position: absolute;
+    left: 50%;
+    width: 50px;
+    height: 50px;
+    background: #0d6efd;
+    border: 2px solid #fff;
+    border-radius: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.2rem;
+    z-index: 1;
+  }
+  
+  .timeline-panel {
+    width: calc(50% - 40px);
+    padding: 20px;
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    position: relative;
+  }
+  
+  .timeline-item.left .timeline-panel {
+    float: left;
+    margin-right: 20px;
+  }
+  
+  .timeline-item.right .timeline-panel {
+    float: right;
+    margin-left: 20px;
+  }
+  
+  .timeline-heading {
+    margin-bottom: 10px;
+  }
+  
+  .timeline-title {
+    margin-top: 0;
+    font-size: 1.1rem;
+  }
+
+
+  .class-hierarchy {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .class-level {
+    display: flex;
+    align-items: center;
+  }
+  
+  .class-box {
+    padding: 10px 15px;
+    border: 1px solid #dee2e6;
+    border-radius: 5px;
+    background-color: #f8f9fa;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  }
+
+
+
+
+/* individual result */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  #studentResultContainer, #studentResultContainer * {
+    visibility: visible;
+  }
+  #studentResultContainer {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+  }
+  .no-print {
+    display: none !important;
+  }
+  /* Add to your existing CSS */
+#studentResultContainer, #classResultsContainer {
+  transition: all 0.3s ease;
+}
+
+.badge {
+  padding: 5px 10px;
+  border-radius: 4px;
+  font-weight: 500;
+}
+
+.table-responsive {
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 0 10px rgba(0,0,0,0.05);
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.individualResultDownload {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  #studentResultContainer, #studentResultContainer *,
+  #classResultsContainer, #classResultsContainer * {
+    visibility: visible;
+  }
+  #studentResultContainer, #classResultsContainer {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    box-shadow: none;
+  }
+  .no-print, .individualResultDownload {
+    display: none !important;
+  }
+  .badge {
+    color: white !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  table {
+    page-break-inside: avoid;
+  }
+}
 }

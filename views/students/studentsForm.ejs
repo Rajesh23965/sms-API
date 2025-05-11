@@ -5,7 +5,9 @@
     <div class="col-lg-12">
       <div class="card shadow-lg rounded-0">
         <div class="card-header bg-dark-subtle text-capitalize  d-flex flex-row justify-content-between align-items-center">
-          <a class="btn btn-danger rounded-1 shadow" href="/students/student-list">Student List</a>
+          <div class="">
+            <a class="btn btn-danger rounded-1 shadow" href="/students/student-list">Student List</a>
+            <a href="/promotion" class="btn btn-success rounded-1 shadow">Renew Student</a>          </div>
           <h3><i class="fas fa-user-graduate me-2"></i>Student Registration Form</h3>
         </div>
         <div class="card-body p-2 border">
@@ -60,17 +62,22 @@
                 <select class="form-select <%= errorFields.includes('class_id') ? 'is-invalid' : '' %>" name="class_id">
                   <option disabled selected hidden>--select class--</option>
                   <% classes.forEach(function(cls) { %>
-                    <option value="<%= cls.id %>" <%= (oldInput?.class_id == cls.id || student?.class_id == cls.id) ? 'selected' : '' %>><%= cls.class_name %></option>
+                    <option value="<%= cls.id %>" 
+                      <%= (oldInput?.class_id == cls.id || (student?.academicHistories?.[0]?.class?.id == cls.id && !oldInput?.class_id)) ? 'selected' : '' %>>
+                      <%= cls.class_name %>
+                    </option>
                   <% }); %>                 
                 </select>
-                
               </div>
               <div class="col-md-3 mb-3">
                 <label class="form-label">Section</label>
                 <select class="form-select <%= errorFields.includes('section_id') ? 'is-invalid' : '' %>" name="section_id">
                   <option disabled selected hidden>--select section--</option>
                   <% sections.forEach(function(section) { %>
-                    <option value="<%= section.id %>" <%= (oldInput?.section_id == section.id || student?.section_id == section.id) ? 'selected' : '' %>><%= section.section_name %></option>
+                    <option value="<%= section.id %>" 
+                            <%= (oldInput?.section_id == section.id || (student?.academicHistories?.[0]?.section?.id == section.id && !oldInput?.section_id)) ? 'selected' : '' %>>
+                      <%= section.section_name %>
+                    </option>
                   <% }); %>                 
                 </select>
               </div>
@@ -201,10 +208,66 @@
               </div>
               <div class="col-md-6">
                 <label class="form-label">Student Photo</label>
+                
+                <% if (student && student.image) { %>
+                  <div class="mb-2">
+                    <img src="/uploads/students/<%= student.image %>" 
+                         alt="Current Photo" 
+                         class="img-thumbnail" 
+                         style="max-width: 150px; max-height: 150px;">
+                    <div class="form-check mt-2">
+                      <input class="form-check-input" type="checkbox" name="delete_image" id="deleteImage">
+                      <label class="form-check-label text-danger" for="deleteImage">
+                        Remove current photo
+                      </label>
+                    </div>
+                  </div>
+                <% } %>
+                
                 <input type="file" name="image" class="form-control <%= errorFields.includes('image') ? 'is-invalid' : '' %>" />
+                <% if (errorFields.includes('image')) { %>
+                  <div class="invalid-feedback">Please upload a valid image (JPEG, JPG, PNG)</div>
+                <% } %>
               </div>
             </div>
-
+          
+            <!-- Promotion Section -->
+            <div class="card mt-4">
+              <div class="card-header bg-info text-white">
+                <h5>Promotion Settings</h5>
+              </div>
+              <div class="card-body">
+                <div class="row">
+                  <div class="col-md-6">
+                    <div class="form-group">
+                      <label>Current Academic Year</label>
+                      <select name="current_academic_year" class="form-select">
+                        <% academicYears.forEach(year => { %>
+                          <option value="<%= year %>" 
+                            <%= (year === currentAcademicYear) ? 'selected' : '' %>>
+                            <%= year %>
+                          </option>
+                        <% }); %>
+                      </select>
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <% if (student) { %>
+                      <div class="d-flex justify-content-end align-items-end h-100">
+                        <a href="/promotion/history/<%= student.id %>" 
+                          class="btn btn-outline-primary me-2">
+                          <i class="fas fa-history me-1"></i> View History
+                        </a>
+                        <a href="/promotion/manual/<%= student.id %>" 
+                          class="btn btn-outline-success">
+                          <i class="fas fa-user-graduate me-1"></i> Manual Promote
+                        </a>
+                      </div>
+                    <% } %>
+                  </div>
+                </div>
+              </div>
+            </div>
             <div class="d-grid mt-4">
               <button type="submit" class="btn btn-success btn-lg">
                 <i class="fas fa-paper-plane me-2"></i><%=studentId?"Edit":"Add"%> Student

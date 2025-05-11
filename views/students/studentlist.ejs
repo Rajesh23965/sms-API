@@ -78,8 +78,14 @@
                       <td class="p-3"><%= sl.admission_no ?? '' %></td>
                       <td class="p-3"><%= (sl.first_name ?? '') + ' ' + (sl.middle_name ?? '') + ' ' + (sl.last_name ?? '') %></td>
                       <td class="p-3"><%= sl.id ?? '' %></td>
-                      <td class="p-3"><%= sl.class?.class_name ?? '' %></td>
-                      <td class="p-3"><%= sl.section?.section_name ?? '' %></td>
+                      <td class="p-3">
+                        <%= sl.academicHistories?.[0]?.class?.class_name ?? '' %>
+                      </td>
+                      <td class="p-3">
+                        <%= sl.academicHistories?.[0]?.section?.section_name ?? '' %>
+                      </td>
+                      
+
                       <td class="p-3">
                         <%= new Date(sl.createdAt).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: '2-digit', year: 'numeric' }).replace(',', '-') %>
                       </td>
