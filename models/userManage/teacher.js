@@ -2,15 +2,15 @@ module.exports = (sequelize, DataTypes) => {
   return sequelize.define(
     "teachers",
     {
-      name: DataTypes.STRING(100),
-      email: DataTypes.STRING(100),
-      phone: DataTypes.STRING(20),
-      image: DataTypes.STRING(100),
-      gender: DataTypes.ENUM("male", "female", "others"),
-      qualification: DataTypes.STRING(100),
-      address: DataTypes.TEXT,
+      name:{type: DataTypes.STRING(100)},
+      email: {type:DataTypes.STRING(100)},
+      phone: {type:DataTypes.STRING(20)},
+      image: {type:DataTypes.STRING(100)},
+      gender: {type:DataTypes.ENUM("male", "female", "others")},
+      qualification:{type: DataTypes.STRING(100)},
+      address:{type: DataTypes.TEXT},
       class_id: {
-        type: DataTypes.INTEGER,
+        type: DataTypes.TEXT,
         allowNull: true,
         references: {
           model: "classes",

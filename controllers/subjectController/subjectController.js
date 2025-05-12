@@ -1,3 +1,4 @@
+const { Op } = require("sequelize");
 const db = require("../../models");
 const Subject = db.subjects;
 const SubjectClass = db.subjectClass;
@@ -18,90 +19,122 @@ const loadSubjectForm = async (req, res) => {
         req.session.success = null;
         req.session.error = null;
 
-        // Fetch subject data with all associations
-        const subjectData = subjectId
-        ? await Subject.findByPk(subjectId, {
-            include: [
-              { 
-                model: SubjectClass, 
-                as: 'subject_classes', 
-                include: [
-                  { 
-                    model: StudentClass, 
-                    as: 'class',
-                    include: [{
-                      model: db.sections,
-                      as: 'sections'
-                    }]
-                  },
-                  {
-                    model: db.sections,
-                    as: 'section',
-                    attributes: ['id', 'section_name', 'class_id'] // Explicitly list columns
-                  }
-                ] 
-              }
-            ],
-          })
-        : null;
+        // Pagination and search parameters
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 10;
+        const offset = (page - 1) * limit;
+        const searchQuery = req.query.search || '';
 
-        // Fetch all subjects with their class and section associations
-        const subjects = await Subject.findAll({
-            include: [
-                {
-                    model: SubjectClass,
-                    as: 'subject_classes',
-                    include: [
-                        { 
-                            model: StudentClass, 
-                            as: 'class',
-                            include: [{
+        // Build the where clause for search
+        const whereClause = {};
+        if (searchQuery) {
+            whereClause[Op.or] = [
+                { name: { [Op.like]: `%${searchQuery}%` } },
+            ];
+        }
+
+        // Fetch subject data with all associations if editing
+        const subjectData = subjectId
+            ? await Subject.findByPk(subjectId, {
+                include: [
+                    {
+                        model: SubjectClass,
+                        as: 'subject_classes',
+                        include: [
+                            {
+                                model: StudentClass,
+                                as: 'class',
+                                attributes: ['id', 'class_name']
+                            },
+                            {
                                 model: db.sections,
-                                as: 'sections'
-                            }]
-                        },
-                        {
-                            model: db.sections,
-                            as: 'section'
-                        }
-                    ]
-                }
-            ],
-            order: [['name', 'ASC']] // Optional: sort subjects alphabetically
+                                as: 'section',
+                                attributes: ['id', 'section_name', 'class_id']
+                            }
+                        ]
+                    }
+                ],
+            })
+            : null;
+
+        // Fetch paginated subjects with their class and section associations
+        const { count, rows: subjects } = await Subject.findAndCountAll({
+            where: whereClause,
+            include: [{
+                model: SubjectClass,
+                as: 'subject_classes',
+                separate: true,
+                include: [
+                    {
+                        model: StudentClass,
+                        as: 'class',
+                        attributes: ['id', 'class_name']
+                    },
+                    {
+                        model: db.sections,
+                        as: 'section',
+                        attributes: ['id', 'section_name', 'class_id'],
+                    }
+                ]
+            }],
+            distinct: true,
+            order: [['name', 'ASC']],
+            limit,
+            offset
         });
 
         // Get all classes with their sections for the form dropdowns
         const listclass = await StudentClass.findAll({
             include: [{
                 model: db.sections,
-                as: 'sections'
+                as: 'sections',
+                attributes: ['id', 'section_name']
             }],
-            order: [['class_name', 'ASC']] // Optional: sort classes alphabetically
+            order: [['class_name', 'ASC']]
         });
 
-        const teacherlist = await Teacher.findAll({
-            order: [['name', 'ASC']] // Optional: sort teachers alphabetically
-        });
+        // Calculate pagination details
+        const totalPages = Math.ceil(count / limit);
+        const hasNextPage = page < totalPages;
+        const hasPreviousPage = page > 1;
+        const nextPage = hasNextPage ? page + 1 : null;
+        const previousPage = hasPreviousPage ? page - 1 : null;
+        const paginationStart = Math.max(1, page - 2);
+        const paginationEnd = Math.min(totalPages, page + 2);
 
         res.render("subjects/subjectform", {
             errorFields,
             oldInput,
             listclass,
-            teacherlist,
             subjectData,
             subjects,
             subjectId,
             success,
-            error
+            error,
+            searchQuery,
+            pagination: {
+                totalItems: count,
+                currentPage: page,
+                totalPages,
+                hasNextPage,
+                hasPreviousPage,
+                nextPage,
+                previousPage,
+                paginationStart,
+                paginationEnd,
+                limit
+            }
         });
     } catch (err) {
         console.error('Error in loadSubjectForm:', err);
-        res.status(500).send("Server Error");
+        req.flash('error', 'Error loading subject form');
+        res.redirect('/subjects/subject-form');
     }
 };
+
 const addOrUpdateSubject = async (req, res) => {
     try {
-        const { name, passmarks, fullmarks, section_mapping } = req.body;
+        const { name, passmarks, fullmarks, creditHour, section_mapping } = req.body;
         const subjectId = req.query.subjectId;
         const redirectURL = "/subjects/subject-form";
 
@@ -112,13 +145,14 @@ const addOrUpdateSubject = async (req, res) => {
                 class_id,
                 section_id,
                 passmarks,
-                fullmarks
+                fullmarks,
+                creditHour
             };
         });
 
         // Input validation
-        if (!name || !passmarks || !fullmarks || class_sections.length === 0) {
-            req.session.errorFields = ["name", "passmarks", "fullmarks", "section_mapping"];
+        if (!name || !passmarks || !fullmarks || !creditHour || class_sections.length === 0) {
+            req.session.errorFields = ["name", "passmarks", "fullmarks", "creditHour", "section_mapping"];
             req.session.oldInput = req.body;
             req.session.error = "All fields are required.";
             return res.redirect(redirectURL);
@@ -131,7 +165,6 @@ const addOrUpdateSubject = async (req, res) => {
             return res.redirect(redirectURL);
         }
 
-        // Subject prefix logic (e.g. NEP from Nepali)
         const sanitize = str => str.replace(/[^A-Z]/gi, '').toUpperCase();
         const prefix = sanitize(name).substring(0, 3);
 
@@ -148,16 +181,17 @@ const addOrUpdateSubject = async (req, res) => {
             subject.name = name;
             subject.passmarks = passmarks;
             subject.fullmarks = fullmarks;
+            subject.creditHour = creditHour;
             await subject.save();
 
-            // Remove old class-section-code mappings
+
             await SubjectClass.destroy({ where: { subject_id: subjectId } });
             await SubjectCode.destroy({ where: { subject_id: subjectId } });
 
             req.session.success = "Subject updated successfully.";
         } else {
             // Create new subject
-            subject = await Subject.create({ name, passmarks, fullmarks });
+            subject = await Subject.create({ name, passmarks, fullmarks, creditHour });
             req.session.success = "Subject added successfully.";
         }
 

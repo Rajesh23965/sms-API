@@ -12,7 +12,6 @@ const db = {};
 db.Sequelize = Sequelize;
 db.sequelize = sequelize;
 
-db.parents = require("./userManage/parents.js")(sequelize, DataTypes);
 db.classes = require("./classModel/classes.js")(sequelize, DataTypes);
 db.sections = require("./classModel/sections.js")(sequelize, DataTypes);
 db.teachers = require("./userManage/teacher.js")(sequelize, DataTypes);
@@ -38,7 +37,8 @@ db.vdc = require("./location/vdcmodels.js")(sequelize, DataTypes);
 db.subjectCode = require("./classModel/subjectCode")(sequelize, DataTypes);
 db.subjectClass = require("./classModel/subjectClass")(sequelize, DataTypes);
 db.subjectTeacher = require("./classModel/subjectTeacher")(sequelize, DataTypes);
-
+db.student_academic_histories = require("./examManage/studentAcademicYear.js")(sequelize, DataTypes);
+db.terms = require("./examManage/terms.js")(sequelize, DataTypes);
 // Setup associations
 require("./associations.js")(db);
 

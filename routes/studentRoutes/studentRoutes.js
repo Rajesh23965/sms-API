@@ -1,32 +1,22 @@
 const express = require("express");
 const router = express.Router();
-const path = require("path");
-
+const db=require("../../models");
 const studentController = require("../../controllers/studentController/student");
-const db = require("../../models");
-const multer = require("multer");
+const { studentUpload }=require("../../middleware/upload.js");
 
-// Setup file upload using multer
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, "public/images");
-  },
-  filename: function (req, file, cb) {
-    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
-    cb(null, uniqueSuffix + path.extname(file.originalname));
-  },
-});
-const upload = multer({ storage });
 
+const path = require("path");
 const District = db.district;
 const Vdc = db.vdc;
 const Section = db.sections;
 router.get("/student-form", studentController.loadStudentForm);
 router.get("/student-list", studentController.loadStudentList);
+router.get("/count", studentController.getTotalStudents);
+
 router.get("/delete-class/:id", studentController.deleteStudent);
 router.post(
   "/api/students",
-  upload.single("image"),
+  studentUpload.single("image"),
   studentController.addOrUpdateStudent
 );
 
@@ -58,8 +48,9 @@ router.get("/get-vdcs/:districtId", async (req, res) => {
 router.get("/get-sections/:classId", async (req, res) => {
   try {
     const sections = await Section.findAll({
-      where: { class_id: req.params.classId }, // FIXED
+      where: { class_id: req.params.classId },
     });
+    console.log(sections);
     res.json(sections);
   } catch (error) {
     console.error("Error fetching sections:", error);

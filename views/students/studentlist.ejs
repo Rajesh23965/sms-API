@@ -4,93 +4,156 @@
   <div class="row justify-content-center">
     <div class="col-lg-12">
       <div class="card shadow-lg rounded-0">
-        <div
-          class="card-header bg-gradient text-capitalize d-flex flex-row justify-content-between align-items-center"
-        >
-          <a
-            class="btn btn-danger rounded-1 shadow"
-            href="/students/student-form"
-            >Add Student</a
-          >
+        <div class="card-header bg-gradient text-capitalize d-flex flex-row justify-content-between align-items-center">
+          <a class="btn btn-danger rounded-1 shadow" href="/students/student-form">Add Student</a>
           <h3><i class="fas fa-user-graduate me-2"></i>Registered List</h3>
         </div>
+
         <div class="card-body p-4">
-          <% if (success && typeof success === 'string' && success.trim() !==
-          '') { %>
-          <div
-            class="alert alert-success alert-dismissible fade show"
-            role="alert"
-          >
-            <%= success %>
-            <button
-              type="button"
-              class="btn-close"
-              data-bs-dismiss="alert"
-              aria-label="Close"
-            ></button>
-          </div>
-          <% } %> <% if (error) { %>
-          <div
-            class="alert alert-danger alert-dismissible fade show"
-            role="alert"
-          >
-            <%= error %>
-            <button
-              type="button"
-              class="btn-close"
-              data-bs-dismiss="alert"
-              aria-label="Close"
-            ></button>
-          </div>
+          <% if (success && typeof success === 'string' && success.trim() !== '') { %>
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+              <%= success %>
+              <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
           <% } %>
 
-          <table class="table table-responsive">
-            <thead>
-              <tr>
-                <th>S.N</th>
-                <th>Admission number</th>
-                <th>Student name</th>
-                <th>Roll number</th>
-                <th>class</th>
-                <th>Section</th>
-                <th>Admission Date</th>
-                <th>Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              <% let i = 0; %> <% studentlist.forEach(function(sl) { %>
-              <tr>
-                <td><%= ++i %></td>
-                <td><%= sl.admission_no ?? '' %></td>
-                <td>
-                  <%= (sl.first_name ?? '') + ' ' + (sl.middle_name ?? '') + ' '
-                  + (sl.last_name ?? '') %>
-                </td>
-                <td><%= sl.id ?? '' %></td>
-                <td><%= sl.class_id ?? '' %></td>
-                <td><%= sl.section_id ?? '' %></td>
-                <td>
-                  <%= new Date(sl.createdAt).toLocaleDateString('en-US', {
-                  weekday: 'short', month: 'short', day: '2-digit', year:
-                  'numeric' }).replace(',', '-') %>
-                </td>
+          <% if (error) { %>
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+              <%= error %>
+              <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+          <% } %>
 
-                <td>
-                  <a
-                    class="btn btn-outline-success fa fa-edit"
-                    href="<%= sl.id ? '/students/student-form?studentId=' + sl.id : '#' %>"
-                  ></a>
+          <div class="bg-white shadow justify-content-between rounded-lg overflow-hidden">
+            <div class="flex justify-content-between mb-3 items-center gap-2 mt-4 md:mt-0 px-2">
+              <div class="grid grid-cols-1">
+                <form method="GET" action="/students/student-list" class="flex items-center gap-2">
+                  <!-- <label for="search">Search</label> -->
+                  <input 
+                    type="search" 
+                    name="search" 
+                    class="border-2 border-gray-600 rounded-lg p-2" 
+                    placeholder="Search by name, admission no, etc"
+                    value="<%= searchQuery || '' %>"
+                  >
+                  <button type="submit" class="btn btn-primary">Search</button>
+                  <% if (searchQuery) { %>
+                    <a href="/students/student-list" class="btn btn-secondary">Clear</a>
+                  <% } %>
+                </form>
+              </div>
+              <div class="">
 
-                  <a
-                    class="btn btn-outline-danger fa fa-trash"
-                    href="/students/delete-class/<%= sl.id %>"
-                    onclick="return confirm('Are you sure you want to delete this student?');"
-                  ></a>
-                </td>
-              </tr>
-              <% }) %>
-            </tbody>
-          </table>
+                <label for="limitSelect">Show</label>
+                <select class="border border-gray-300 rounded-md p-2" style="width: auto;" onchange="changeLimit(this)">
+                  <option value="5" <%= pagination.limit == 5 ? 'selected' : '' %>>5</option>
+                  <option value="10" <%= pagination.limit == 10 ? 'selected' : '' %>>10</option>
+                  <option value="25" <%= pagination.limit == 25 ? 'selected' : '' %>>25</option>
+                  <option value="50" <%= pagination.limit == 50 ? 'selected' : '' %>>50</option>
+                  <option value="100" <%= pagination.limit == 100 ? 'selected' : '' %>>100</option>
+                </select>
+                <span>entries</span>
+              </div>
+            </div>
+
+            <div class="overflow-x-auto">
+              <table class="min-w-full text-sm text-left">
+                <thead class="bg-gray-100">
+                  <tr>
+                    <th class="p-3">S.N</th>
+                    <th class="p-3">Admission Number</th>
+                    <th class="p-3">Student Name</th>
+                    <th class="p-3">Roll Number</th>
+                    <th class="p-3">Class</th>
+                    <th class="p-3">Section</th>
+                    <th class="p-3">Admission Date</th>
+                    <th class="p-3">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% let i = (pagination.currentPage - 1) * pagination.limit; %>
+                  <% studentlist.forEach(function(sl) { %>
+                    <tr class="border-b hover:bg-gray-50">
+                      <td class="p-3"><%= ++i %></td>
+                      <td class="p-3"><%= sl.admission_no ?? '' %></td>
+                      <td class="p-3"><%= (sl.first_name ?? '') + ' ' + (sl.middle_name ?? '') + ' ' + (sl.last_name ?? '') %></td>
+                      <td class="p-3"><%= sl.id ?? '' %></td>
+                      <td class="p-3">
+                        <%= sl.academicHistories?.[0]?.class?.class_name ?? '' %>
+                      </td>
+                      <td class="p-3">
+                        <%= sl.academicHistories?.[0]?.section?.section_name ?? '' %>
+                      </td>
+                      
+
+                      <td class="p-3">
+                        <%= new Date(sl.createdAt).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: '2-digit', year: 'numeric' }).replace(',', '-') %>
+                      </td>
+                      <td class="p-3 flex gap-2">
+                        <a href="/students/student-form?studentId=<%= sl.id %>" class="btn btn-outline-success fa fa-edit"></a>
+                        <a href="/students/delete-class/<%= sl.id %>" onclick="return confirm('Are you sure?');" class="btn btn-outline-danger fa fa-trash"></a>
+                      </td>
+                    </tr>
+                  <% }) %>
+                </tbody>
+              </table>
+            </div>
+            <div class="d-flex justify-content-between align-items-center mt-3 p-4">
+              <div>
+                Showing <%= pagination.startEntry %> to <%= pagination.endEntry %> of <%= pagination.totalItems %> entries
+              </div>
+            
+              <nav aria-label="Page navigation">
+                <ul class="pagination pagination-sm mb-0">
+                  <% if (pagination.hasPreviousPage) { %>
+                    <li class="page-item">
+                      <a class="page-link" href="/students/student-list?page=1&limit=<%= pagination.limit %><%= searchQuery ? `&search=${encodeURIComponent(searchQuery)}` : '' %>" aria-label="First">
+                        <span aria-hidden="true"><i class="fa-solid fa-angles-left"></i><i class="fa-solid fa-angles-left"></i></span>
+                      </a>
+                    </li>
+                    <li class="page-item">
+                      <a class="page-link" href="/students/student-list?page=<%= pagination.previousPage %>&limit=<%= pagination.limit %><%= searchQuery ? `&search=${encodeURIComponent(searchQuery)}` : '' %>" aria-label="Previous">
+                        <span aria-hidden="true"><i class="fa-solid fa-angle-left"></i></span>
+                      </a>
+                    </li>
+                  <% } else { %>
+                    <li class="page-item disabled">
+                      <span class="page-link"><i class="fa-solid fa-angles-left"></i><i class="fa-solid fa-angles-left"></i></span>
+                    </li>
+                    <li class="page-item disabled">
+                      <span class="page-link"><i class="fa-solid fa-angle-left"></i></span>
+                    </li>
+                  <% } %>
+            
+                  <% for(let i = pagination.paginationStart; i <= pagination.paginationEnd; i++) { %>
+                    <li class="page-item <%= pagination.currentPage === i ? 'active' : '' %>">
+                      <a class="page-link" href="/students/student-list?page=<%= i %>&limit=<%= pagination.limit %><%= searchQuery ? `&search=${encodeURIComponent(searchQuery)}` : '' %>"><%= i %></a>
+                    </li>
+                  <% } %>
+            
+                  <% if (pagination.hasNextPage) { %>
+                    <li class="page-item">
+                      <a class="page-link" href="/students/student-list?page=<%= pagination.nextPage %>&limit=<%= pagination.limit %><%= searchQuery ? `&search=${encodeURIComponent(searchQuery)}` : '' %>" aria-label="Next">
+                        <span aria-hidden="true"><i class="fa-solid fa-angle-right"></i></span>
+                      </a>
+                    </li>
+                    <li class="page-item">
+                      <a class="page-link" href="/students/student-list?page=<%= pagination.totalPages %>&limit=<%= pagination.limit %><%= searchQuery ? `&search=${encodeURIComponent(searchQuery)}` : '' %>" aria-label="Last">
+                        <span aria-hidden="true"><i class="fa-solid fa-angles-right"></i><i class="fa-solid fa-angles-right"></i></span>
+                      </a>
+                    </li>
+                  <% } else { %>
+                    <li class="page-item disabled">
+                      <span class="page-link"><i class="fa-solid fa-angle-right"></i></span>
+                    </li>
+                    <li class="page-item disabled">
+                      <span class="page-link"><i class="fa-solid fa-angles-right"></i><i class="fa-solid fa-angles-right"></i></span>
+                    </li>
+                  <% } %>
+                </ul>
+              </nav>
+            </div>
+          </div>
         </div>
       </div>
     </div>

@@ -84,7 +84,9 @@
 
                   <div class="d-grid">
                     <button type="submit" class="btn btn-success btn-lg">
-                      <i class="fas fa-paper-plane me-2"></i>Submit
+
+                      <i class="fas fa-paper-plane me-2"></i><%=sectionsById?"Edit":"Add"%> Section
+
                     </button>
                   </div>
                 </div>
@@ -124,6 +126,7 @@
                             <% } else { %>
                               <span class="text-muted">No section added</span>
                             <% } %>
+                        
                           </td>
                         </tr>
                       <% }) %>

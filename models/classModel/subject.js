@@ -5,6 +5,7 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: false,
       unique: true,
     },
+
     passmarks: {
       type: DataTypes.INTEGER,
       allowNull: false,
@@ -19,5 +20,13 @@ module.exports = (sequelize, DataTypes) => {
         min: 1,
       },
     },
+    creditHour: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: 1,
+      validate: {
+        min: 1,
+      },
+    }
   });
 };

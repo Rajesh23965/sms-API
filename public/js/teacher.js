@@ -1,17 +1,41 @@
-
 document.addEventListener('DOMContentLoaded', function () {
   const classCheckboxes = document.querySelectorAll('.class-checkbox');
   const sectionContainer = document.getElementById('sectionContainer');
   const subjectContainer = document.getElementById('subjectContainer');
-
-
+  const isEditMode = window.location.search.includes('teacherId');
   
-  async function updateSectionsAndSubjects() {
-    const selectedClassIds = Array.from(classCheckboxes)
-      .filter(cb => cb.checked)
-      .map(cb => cb.value);
+  // Get pre-selected values from hidden inputs or data attributes
+  const oldClassIds = JSON.parse(document.getElementById('oldClassIds')?.value || '[]');
+  const oldSectionIds = JSON.parse(document.getElementById('oldSectionIds')?.value || '[]');
+  const oldSubjectIds = JSON.parse(document.getElementById('oldSubjectIds')?.value || '[]');
 
-    if (!selectedClassIds.length) {
+  const classColors = [
+    'bg-primary',
+    'bg-success',
+    'bg-danger',
+    'bg-warning',
+    'bg-info',
+    'bg-secondary'
+  ];
+
+  // Check classes on initial load if in edit mode
+  if (isEditMode && oldClassIds.length) {
+    classCheckboxes.forEach(checkbox => {
+      if (oldClassIds.includes(checkbox.value)) {
+        checkbox.checked = true;
+      }
+    });
+  }
+
+  async function updateSectionsAndSubjects() {
+    const selectedClasses = Array.from(classCheckboxes)
+      .filter(cb => cb.checked)
+      .map(cb => ({
+        id: cb.value,
+        name: cb.closest('label').innerText.trim()
+      }));
+
+    if (!selectedClasses.length) {
       sectionContainer.innerHTML = '<p class="text-muted">Please select classes to see available sections</p>';
       subjectContainer.innerHTML = '<p class="text-muted">Please select sections to see available subjects</p>';
       return;
@@ -21,7 +45,7 @@ document.addEventListener('DOMContentLoaded', function () {
       const response = await fetch('/teachers/get-sections', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ classIds: selectedClassIds }),
+        body: JSON.stringify({ classIds: selectedClasses.map(cls => cls.id) }),
       });
 
       const sections = await response.json();
@@ -37,19 +61,35 @@ document.addEventListener('DOMContentLoaded', function () {
           <hr class="p-2 m-0" />
         `;
 
-        sections.forEach(section => {
+        let colorIndex = 0;
+        let currentClassId = null;
+
+        sections.forEach((section, index) => {
+          const bgColorClass = classColors[colorIndex % classColors.length];
+
+          if (currentClassId !== section.class_id) {
+            const classObj = selectedClasses.find(cls => cls.id == section.class_id);
+            const className = classObj ? classObj.name : 'Unknown Class';
+
+            html += `<h6 class="p-2 text-white ${bgColorClass}">${className}</h6>`;
+            currentClassId = section.class_id;
+          }
+
+          const isChecked = oldSectionIds.includes(section.id.toString());
+          
           html += `
-            <div class="form-check">
+            <div class="form-check p-2 rounded mb-2">
               <label class="form-check-label cursor-pointer">
                 <input type="checkbox" 
                        class="form-check-input section-checkbox" 
                        name="section_id[]" 
-                       value="${section.id}">
+                       value="${section.id}"
+                       ${isChecked ? 'checked' : ''}>
                 ${section.section_name}
               </label>
             </div>
-            <hr class="p-2 m-0" />
           `;
+          colorIndex++;
         });
 
         sectionContainer.innerHTML = html;
@@ -65,6 +105,11 @@ document.addEventListener('DOMContentLoaded', function () {
           });
           fetchSubjects();
         });
+
+        // If in edit mode, trigger subjects fetch for pre-selected sections
+        if (isEditMode && oldSectionIds.length > 0) {
+          fetchSubjects();
+        }
 
       } else {
         sectionContainer.innerHTML = '<p class="text-muted">No sections available for selected classes</p>';
@@ -93,7 +138,10 @@ document.addEventListener('DOMContentLoaded', function () {
       const response = await fetch('/teachers/get-subjects', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ classIds: selectedClassIds, sectionIds: selectedSectionIds }),
+        body: JSON.stringify({ 
+          classIds: selectedClassIds, 
+          sectionIds: selectedSectionIds 
+        }),
       });
 
       const subjects = await response.json();
@@ -102,7 +150,11 @@ document.addEventListener('DOMContentLoaded', function () {
         subjectContainer.innerHTML = subjects.map(subject => `
           <div class="form-check">
             <label class="form-check-label cursor-pointer">
-              <input type="checkbox" class="form-check-input" name="subject_id[]" value="${subject.id}">
+              <input type="checkbox" 
+                     class="form-check-input" 
+                     name="subject_id[]" 
+                     value="${subject.id}"
+                     ${oldSubjectIds.includes(subject.id.toString()) ? 'checked' : ''}>
               ${subject.name}
             </label>
           </div>

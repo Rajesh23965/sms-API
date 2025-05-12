@@ -1,7 +1,6 @@
 const db = require("../../models");
 const ClassList = db.classes;
 const Section = db.sections;
-const { Op } = require("sequelize");
 
 const loadsectionform = async (req, res) => {
   const error = req.flash("error")[0] || "";
@@ -17,10 +16,15 @@ const loadsectionform = async (req, res) => {
     if (classIdforSection) {
       sectionsById = await Section.findAll({
         where: { class_id: classIdforSection },
+        include: [
+          {
+            model: ClassList,
+            as: "class",
+            attributes: ['class_name'],
+          },
+        ],
       });
     }
-
-    // res.send(sectionsById);
 
     const listclass = await ClassList.findAll();
     const classWithSections = await ClassList.findAll({
@@ -175,7 +179,28 @@ const addorupdateSection = async (req, res) => {
   }
 };
 
+const deleteSection = async (req, res) => {
+  try {
+    const id = req.params.id;
+    const section = await Section.findByPk(id);
+    if (!section) {
+      req.flash("error", "Section not found");
+      return res.redirect("/sections/section-form");
+    }
+
+    await section.destroy();
+    req.flash("success", "Section deleted successfully.");
+    return res.redirect("/sections/section-form");
+  } catch (error) {
+    console.log("Failed to delete section: ", error);
+    req.flash("error", "Internal server error.");
+    return res.redirect("/sections/section-form");
+  }
+};
+
+
 module.exports = {
   loadsectionform,
   addorupdateSection,
+  deleteSection
 };

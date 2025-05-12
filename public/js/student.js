@@ -16,6 +16,49 @@ document.addEventListener("DOMContentLoaded", function () {
     loadingSpinner.style.display = "none";
   });
 
+  //To get total Class
+  async function fetchTotalClass() {
+    try {
+      const res = await fetch("/classes/count");
+      const data = await res.json();
+      const totalClasses = document.getElementById("totalClass");
+      if (totalClasses) totalClasses.innerText = data.totalClass;
+    } catch (error) {
+      console.error("Failed to fetch total classes:", err);
+    }
+  }
+  fetchTotalClass();
+
+  
+  //Get total Teachers
+  async function fetchTotalTeachers() {
+    try {
+      const res = await fetch("/teachers/count");
+      const data = await res.json();
+      const totalTeachersEl = document.getElementById("totalTeachers");
+      if (totalTeachersEl) totalTeachersEl.innerText = data.totalTeachers;
+    } catch (err) {
+      console.error("Failed to fetch total teachers:", err);
+    }
+  }
+
+  fetchTotalTeachers();
+  //Get Total Student
+  async function fetchTotalStudents() {
+    try {
+      const res = await fetch("/students/count");
+      const data = await res.json();
+      const totalStudentsEl = document.getElementById("totalStudents");
+      if (totalStudentsEl) totalStudentsEl.innerText = data.totalStudents;
+    } catch (err) {
+      console.error("Failed to fetch total students:", err);
+    }
+  }
+
+  fetchTotalStudents();
+
+
+
   const stats = {
     students: 950,
     teachers: 45,
@@ -40,35 +83,75 @@ document.addEventListener("DOMContentLoaded", function () {
       sidebar.classList.toggle("collapsed");
     });
   }
-  async function loadSections(classId) {
+  async function loadSections(classId, preserveSelection = true) {
     if (!classId) return;
 
     try {
       const response = await fetch(`/students/get-sections/${classId}`);
       const sections = await response.json();
 
+      // Store current selection if needed
+      const currentSectionId = preserveSelection ? sectionSelect.value : null;
+
+      // Clear existing options
       sectionSelect.innerHTML = '<option disabled selected hidden>--select section--</option>';
 
+      // Add new options
       sections.forEach(section => {
         const option = document.createElement("option");
         option.value = section.id;
         option.textContent = section.section_name;
-        if (section.id == oldSectionId) option.selected = true;
         sectionSelect.appendChild(option);
       });
+
+      // Restore selection if needed
+      if (preserveSelection && currentSectionId) {
+        sectionSelect.value = currentSectionId;
+      }
+
+      // If editing, select the student's section (only if not preserving selection)
+      const studentSectionId = "<%= student?.section_id %>";
+      if (studentSectionId && !preserveSelection) {
+        sectionSelect.value = studentSectionId;
+      }
     } catch (err) {
       console.error("Failed to load sections:", err);
     }
   }
-  classSelect.addEventListener("change", () => {
-    const selectedClassId = classSelect.value;
-    loadSections(selectedClassId);
-  });
 
-  // Initial load if class already selected (e.g., edit mode)
-  if (classSelect.value) {
-    loadSections(classSelect.value);
+
+
+  if (classSelect) {
+    // Load sections when class changes
+    classSelect.addEventListener("change", () => {
+      const selectedClassId = classSelect.value;
+      loadSections(selectedClassId);
+    });
+
+    // Initial load if class already selected
+    if (classSelect.value) {
+      loadSections(classSelect.value);
+    }
   }
+
 });
 
 
+const limitSelect = document.getElementById('limitSelect');
+if (limitSelect) {
+  limitSelect.addEventListener('change', function () {
+    const limit = this.value;
+    const url = new URL(window.location.href);
+    url.searchParams.set('limit', limit);
+    url.searchParams.set('page', 1);
+    window.location.href = url.toString();
+  });
+}
+
+function changeLimit(select) {
+  const limit = select.value;
+  const url = new URL(window.location.href);
+  url.searchParams.set('limit', limit);
+  url.searchParams.set('page', 1);
+  window.location.href = url.toString();
+}

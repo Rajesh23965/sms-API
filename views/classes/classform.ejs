@@ -7,7 +7,7 @@
         <div
           class="card-header bg-dark-subtle text-capitalize d-flex justify-content-between align-items-center"
         >
-          <h3><i class="fas fa-user-graduate me-2"></i>Class setup</h3>
+          <h3><i class="fas fa-user-graduate me-2"></i>Class Setup</h3>
         </div>
 
         <div class="card-body p-2 border">
@@ -38,17 +38,21 @@
             ></button>
           </div>
           <% } %>
+
+          <!-- Class Management Section -->
           <div class="card-header mb-1 bg-danger text-light">
             <h5>Class Details</h5>
           </div>
 
           <div class="row">
-            <div class="col-md-6 p-0 m-0">
+            <div class="p-0 m-0">
               <form
                 action="/classes/api/classes<%= studentclassById ? '?classId=' + studentclassById.id : '' %>"
                 method="POST"
               >
-                <div class="border p-3 bg-body-tertiary">
+                <div
+                  class="flex justify-content-between items-center border p-3 bg-body-tertiary"
+                >
                   <div class="mb-3">
                     <label class="form-label">Class Name</label>
                     <input
@@ -61,16 +65,18 @@
                     />
                   </div>
 
-                  <div class="d-grid">
+                  <div class="">
                     <button type="submit" class="btn btn-success btn-lg">
-                      <i class="fas fa-paper-plane me-2"></i>Submit
+                      <i class="fas fa-paper-plane"></i>
+                      <%=studentclassById?"Edit":"Add"%> Class
                     </button>
                   </div>
                 </div>
               </form>
             </div>
 
-            <div class="col-md-6 p-0 m-0">
+            <!-- Class List Table -->
+            <div class="p-0 m-0">
               <div class="table-responsive bg-body-secondary">
                 <table class="table table-bordered table-hover">
                   <thead class="table-light">
@@ -91,7 +97,6 @@
                           class="btn btn-outline-success fa fa-edit"
                           href="/classes/class-form?<%= 'classId=' + cl.id %>"
                         ></a>
-
                         <a
                           class="btn btn-outline-danger fa fa-trash"
                           href="/classes/delete-class/<%= cl.id %>"
@@ -111,9 +116,184 @@
               </div>
             </div>
           </div>
-          <!-- /.row -->
+
+          <!-- Subjects by Class and Section Section -->
+          <div class="mt-4">
+            <div
+              class="card-header mb-3 bg-primary text-light d-flex justify-content-between align-items-center"
+            >
+              <h5 class="mb-0">View Subjects by Class and Section</h5>
+              <div id="activeFilters" class="d-flex gap-2"></div>
+            </div>
+
+            <div class="row g-3 flex justify-content-between align-items-center">
+             
+              <div class="col-md-4">
+                <label for="classSelect" class="form-label fw-bold"
+                  >Select Class</label>
+
+                <select id="classSelect" class="form-select" multiple>
+                  <% if (classlist && classlist.length > 0) { %> <%
+                  classlist.forEach((cl) => { %>
+                  <option value="<%= cl.id %>"><%= cl.class_name %></option>
+                  <% }) %> <% } %>
+                </select>
+                <div class="form-text text-muted">
+                  Select one or more classes
+                </div>
+              </div>
+
+              <!-- Section Selection -->
+              <div class="col-md-4">
+                <label for="sectionSelect" class="form-label fw-bold"
+                  >Select Section</label>
+                <select
+                  id="sectionSelect"
+                  class="form-select"
+                  multiple
+                  disabled
+                >
+                  <option value="">First select a class</option>
+                </select>
+                <div class="form-text text-muted">
+                  Select one or more sections
+                </div>
+              </div>
+
+           
+              <div class="col-md-4 d-flex align-items-end">
+                <button
+                  id="searchSubjectsBtn"
+                  class="btn btn-primary w-100 "
+                  disabled
+                >
+                  <i class="fas fa-search "></i>Find Subjects
+                </button>
+              </div>
+            </div>
+
+            <!-- Results Section -->
+            <div class="mt-4" id="resultsSection" style="display: none">
+              <div class="card border-0 shadow-sm">
+                <div
+                  class="card-header bg-white border-bottom d-flex justify-content-between align-items-center"
+                >
+                  <h5 class="mb-0 text-primary">
+                    <i class="fas fa-book-open me-2"></i>Subjects
+                  </h5>
+                  <div class="d-flex gap-2">
+                    <button
+                      id="exportBtn"
+                      class="btn btn-sm btn-outline-success"
+                      disabled
+                    >
+                      <i class="fas fa-file-csv me-1"></i>Export CSV
+                    </button>
+                    <button
+                      id="printBtn"
+                      class="btn btn-sm btn-outline-primary"
+                    >
+                      <i class="fas fa-print me-1"></i>Print
+                    </button>
+                  </div>
+                </div>
+                <div class="card-body p-0">
+                  <div class="table-responsive">
+                    <table class="table table-hover mb-0" id="subjectsTable">
+                      <thead class="table-light">
+                        <tr>
+                          <th width="5%">#</th>
+                          <th width="15%">Code</th>
+                          <th width="30%">Subject Name</th>
+                          <th width="20%">Class</th>
+                          <th width="20%">Section</th>
+                          <th width="20%">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody id="subjectsTableBody">
+                        <!-- Will be populated by JavaScript -->
+                      </tbody>
+                    </table>
+                  </div>
+                  <div
+                    id="emptyState"
+                    class="empty-state py-5"
+                    style="display: none"
+                  >
+                    <i class="fas fa-book fa-4x mb-3 text-muted"></i>
+                    <h4 class="text-muted">No subjects found</h4>
+                    <p class="text-center text-muted">
+                      Try selecting different classes or sections
+                    </p>
+                  </div>
+                  <div
+                    id="loadingState"
+                    class="empty-state py-5"
+                    style="display: none"
+                  >
+                    <div
+                      class="spinner-border text-primary loading-spinner mb-3"
+                      role="status"
+                    >
+                      <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <h4 class="text-muted">Loading subjects...</h4>
+                  </div>
+                  <div
+                    class="d-flex justify-content-between align-items-center p-3 border-top"
+                  >
+                    <div class="text-muted" id="resultCount">
+                      Showing 0 subjects
+                    </div>
+                    <!-- <div class="btn-group">
+                      <button class="btn btn-sm btn-outline-secondary" id="prevPage" disabled>
+                        <i class="fas fa-chevron-left"></i>
+                      </button>
+                      <button class="btn btn-sm btn-outline-secondary" id="nextPage" disabled>
+                        <i class="fas fa-chevron-right"></i>
+                      </button>
+                    </div> -->
+                  </div>
+                </div>
+              </div>
+
+              <div
+                class="modal fade"
+                id="subjectDetailsModal"
+                tabindex="-1"
+                aria-hidden="true"
+              >
+                <div class="modal-dialog modal-dialog-centered modal-lg">
+                  <div class="modal-content">
+                    <div class="modal-header bg-primary text-white">
+                      <h5 class="modal-title" id="subjectModalTitle">
+                        Subject Details
+                      </h5>
+                      <button
+                        type="button"
+                        class="btn-close btn-close-white"
+                        data-bs-dismiss="modal"
+                        aria-label="Close"
+                      ></button>
+                    </div>
+                    <div class="modal-body" id="subjectModalBody">
+                      Loading subject details...
+                    </div>
+                    <div class="modal-footer">
+                      <button
+                        type="button"
+                        class="btn btn-secondary"
+                        data-bs-dismiss="modal"
+                      >
+                        Close
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
-        <!-- /.card-body -->
       </div>
     </div>
   </div>
