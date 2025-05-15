@@ -9,8 +9,8 @@ const StudentRec = db.students
 const ClassList = db.classes;
 const SectionList = db.sections;
 const SubjectList = db.subjects
-const Terms=db.terms
-const StudentAcademicHistory=db.student_academic_histories
+const Terms = db.terms
+const StudentAcademicHistory = db.student_academic_histories
 
 
 
@@ -27,12 +27,12 @@ const loadExamTypeForm = async (req, res) => {
     req.session.success = null;
     req.session.oldInput = null;
     req.session.errorFields = null;
-    
+
     //Fetch Current academic Year from student_academic_histories table 
     const currentAcademicHistories = await StudentAcademicHistory.findAll({
       where: { is_current: true },
       attributes: ['academic_year'],
-      group: ['academic_year'] 
+      group: ['academic_year']
     });
 
     const academicYears = currentAcademicHistories.map(item => item.academic_year);
@@ -41,20 +41,20 @@ const loadExamTypeForm = async (req, res) => {
     const rawTermId = req.query.termId || "";
     const termId = validator.escape(rawTermId.trim());
 
- 
+
     // Fetch all terms with their exams
     const terms = await Terms.findAll({
       order: [['start_date', 'DESC']],
       include: [{
         model: ExamTypeModel,
         as: 'exams',
-        attributes: ['id', 'name', 'exam_type','max_marks','weightage']
+        attributes: ['id', 'name', 'exam_type', 'max_marks', 'weightage']
       }]
     });
 
     let currentTerm = null;
     let termDetails = null;
-    
+
     if (termId) {
       termDetails = await Terms.findByPk(termId, {
         include: [{
@@ -62,7 +62,7 @@ const loadExamTypeForm = async (req, res) => {
           as: 'exams'
         }]
       });
-      
+
       if (!termDetails) {
         req.session.error = "Invalid Term ID";
         return res.redirect("/exams/exam-form-type");
@@ -70,7 +70,7 @@ const loadExamTypeForm = async (req, res) => {
     }
 
     // Get current term if exists
-    currentTerm = await Terms.findOne({ 
+    currentTerm = await Terms.findOne({
       where: { is_current: true },
       include: [{
         model: ExamTypeModel,
@@ -126,7 +126,7 @@ const saveTerm = async (req, res) => {
       );
     }
 
- 
+
 
     const whereCondition = {
       name: termData.name,
@@ -160,7 +160,7 @@ const saveTerm = async (req, res) => {
     if (termId) {
       // Update existing term
       const updated = await Terms.update(
-        { 
+        {
           name: termData.name,
           academic_year: termData.academic_year,
           start_date: termData.start_date,
@@ -184,7 +184,7 @@ const saveTerm = async (req, res) => {
         end_date: termData.end_date,
         is_current: termData.is_current === "on"
       });
-      
+
       req.session.success = "Term created successfully!";
     }
 
@@ -212,7 +212,7 @@ const createExam = async (req, res) => {
       return res.redirect(redirectURL);
     }
 
- 
+
     // Create new exam
     await ExamTypeModel.create({
       name: examData.name,
@@ -222,7 +222,7 @@ const createExam = async (req, res) => {
       max_marks: examData.max_marks || 100,
       weightage: examData.weightage || 1
     });
-    
+
     req.session.success = "Exam created successfully!";
     return res.redirect(redirectURL);
 
@@ -244,21 +244,30 @@ const deleteTerm = async (req, res) => {
   }
 
   try {
- 
     // Check if term has exams
     const examsCount = await ExamTypeModel.count({ where: { term_id: termId } });
 
     if (examsCount > 0) {
-      req.session.error = "Cannot delete term with existing exams";
-      return res.redirect(redirectURL);
-    }
+      // First delete all exams associated with this term
+      await ExamTypeModel.destroy({ where: { term_id: termId } });
 
-    const deleted = await Terms.destroy({ where: { id: termId } });
+      // Now delete the term
+      const deleted = await Terms.destroy({ where: { id: termId } });
 
-    if (deleted) {
-      req.session.success = "Term deleted successfully";
+      if (deleted) {
+        req.session.success = "Term and associated exams deleted successfully";
+      } else {
+        req.session.error = "Term not found";
+      }
     } else {
-      req.session.error = "Term not found";
+      // No exams, just delete the term
+      const deleted = await Terms.destroy({ where: { id: termId } });
+
+      if (deleted) {
+        req.session.success = "Term deleted successfully";
+      } else {
+        req.session.error = "Term not found";
+      }
     }
 
     return res.redirect(redirectURL);
@@ -269,29 +278,30 @@ const deleteTerm = async (req, res) => {
   }
 };
 
-
 //Student Marks Assign
 const loadExamForm = async (req, res) => {
   try {
     // Fetch both exam types and classes in parallel for better performance
+
     const [examTypeList, classes] = await Promise.all([
       ExamTypeModel.findAll({
         order: [['name', 'ASC']],
-        attributes: ['id', 'name', 'description'] 
+        attributes: ['id', 'name', 'description']
       }),
       ClassList.findAll({
-        order: [['class_name', 'ASC']],
+        order: [['numeric_name', 'ASC']],
         attributes: ['id', 'class_name']
       })
     ]);
-  //Fetch Current academic Year from student_academic_histories table 
-  const currentAcademicHistories = await StudentAcademicHistory.findAll({
-    where: { is_current: true },
-    attributes: ['academic_year'],
-    group: ['academic_year'] // to avoid duplicates if needed
-  });
 
-  const academicYears = currentAcademicHistories.map(item => item.academic_year);
+    //Fetch Current academic Year from student_academic_histories table 
+    const currentAcademicHistories = await StudentAcademicHistory.findAll({
+      where: { is_current: true },
+      attributes: ['academic_year'],
+      group: ['academic_year']
+    });
+
+    const academicYears = currentAcademicHistories.map(item => item.academic_year);
 
     // Get session messages and clear them
     const error = req.session.error || "";
@@ -312,23 +322,26 @@ const loadExamForm = async (req, res) => {
     });
   } catch (error) {
     console.error("Error loading exam form:", error);
-    
+
     // Provide a fallback empty array if exam types can't be loaded
     res.render("exam/examform", {
       examTypeList: [],
       classes: [],
-      academicYears:[],
+      academicYears: [],
       error: "Failed to load exam data. Please try again later.",
       success: "",
       examTypeId: ""
     });
   }
 };
+
+
+
 const searchresult = async (req, res) => {
   try {
     const searchedText = (req.query.q || "").trim();
     const examTypeId = req.query.examTypeId;
-    const academicYearParam = req.query.academicYear; // New parameter
+    const academicYearParam = req.query.academicYear;
 
     if (!searchedText) return res.json({});
 
@@ -337,7 +350,6 @@ const searchresult = async (req, res) => {
       admission_no: searchedText
     };
 
-    // If academic year is provided, search for that year (can be current or old)
     // If not provided, search for current academic year only
     if (academicYearParam) {
       whereConditions.academic_year = academicYearParam;
@@ -368,10 +380,10 @@ const searchresult = async (req, res) => {
     });
 
     if (!studentHistory) {
-      return res.status(404).json({ 
-        message: academicYearParam 
-          ? "Student record not found for the selected academic year" 
-          : "Active student record not found" 
+      return res.status(404).json({
+        message: academicYearParam
+          ? "Student record not found for the selected academic year"
+          : "Active student record not found"
       });
     }
 
@@ -425,11 +437,18 @@ const searchresult = async (req, res) => {
     // existingResults.forEach(result => {
     //   marksMap[result.subject_code] = result.marks;
     // });
+    // const marksMap = {};
+    // existingResults.forEach(result => {
+    //   marksMap[result.subject_code] = result.marks_obtained;
+    // });
     const marksMap = {};
     existingResults.forEach(result => {
-      marksMap[result.subject_code] = result.marks_obtained; 
+      marksMap[result.subject_code] = {
+        marks_obtained: result.marks_obtained,
+        practical_marks: result.practical_marks
+      };
     });
-    
+
     // Format the response
     const response = {
       student: studentHistory.student,
@@ -442,7 +461,12 @@ const searchresult = async (req, res) => {
         code: codeMap[sc.subject_id] || '',
         passmarks: sc.passmarks,
         fullmarks: sc.fullmarks,
-        marks: marksMap[codeMap[sc.subject_id]] || null
+        practical_fullmarks: sc.practical_fullmarks || null, // Use null instead of 0
+        practicalPassmarks: sc.practicalPassmarks,
+        marks: {
+          marks_obtained: marksMap[codeMap[sc.subject_id]]?.marks_obtained || null,
+          practical_marks: marksMap[codeMap[sc.subject_id]]?.practical_marks || null
+        }
       }))
     };
 
@@ -487,12 +511,12 @@ const addstudentsMarks = async (req, res) => {
           where: { status: 'active' }
         },
         {
-          model: ClassList,
+          model: db.classes,
           as: "class",
           attributes: ["id", "class_name"],
         },
         {
-          model: SectionList,
+          model: db.sections,
           as: "section",
           attributes: ["id", "section_name"],
         },
@@ -500,8 +524,8 @@ const addstudentsMarks = async (req, res) => {
     });
 
     if (!studentHistory) {
-      req.session.error = academicYear 
-        ? "Student record not found for the selected academic year" 
+      req.session.error = academicYear
+        ? "Student record not found for the selected academic year"
         : "Active student record not found";
       return res.redirect("/exams/exam-form");
     }
@@ -535,12 +559,14 @@ const addstudentsMarks = async (req, res) => {
     // Create maps for quick lookup
     const subjectCodeToIdMap = {};
     const subjectFullMarks = {};
-    
+    const subjectPracticalMarks = {};
+
     subjectClasses.forEach(sc => {
       const code = sc.subjectCode?.code;
       if (code) {
         subjectCodeToIdMap[code] = sc.subject.id;
         subjectFullMarks[code] = sc.fullmarks;
+        subjectPracticalMarks[code] = sc.practical_marks || 0;
       }
     });
 
@@ -567,8 +593,8 @@ const addstudentsMarks = async (req, res) => {
     for (const [fieldName, marks] of Object.entries(subjectMarks)) {
       if (!marks && marks !== "0") continue;
 
-      if (fieldName.endsWith('_obtained')) {
-        const subjectCode = fieldName.replace('_obtained', '');
+      if (fieldName.endsWith('_theory')) {
+        const subjectCode = fieldName.replace('_theory', '');
 
         // Check for duplicate subject codes
         if (subjectCodes.includes(subjectCode)) {
@@ -583,22 +609,53 @@ const addstudentsMarks = async (req, res) => {
           continue;
         }
 
+        const theoryMarks = parseFloat(marks);
         const fullMarks = subjectFullMarks[subjectCode];
-        const numericMarks = parseFloat(marks);
+        const practicalFullMarks = subjectPracticalMarks[subjectCode] || 0;
 
-        // Validate marks
-        if (isNaN(numericMarks)) {
-          errors.push(`Marks for ${subjectCode} must be a number`);
+        // Validate theory marks
+        if (isNaN(theoryMarks)) {
+          errors.push(`Theory marks for ${subjectCode} must be a number`);
           continue;
         }
-        if (numericMarks > fullMarks) {
-          errors.push(`Marks for ${subjectCode} cannot exceed ${fullMarks}`);
+        if (theoryMarks > fullMarks) {
+          errors.push(`Theory marks for ${subjectCode} cannot exceed ${fullMarks}`);
           continue;
         }
-        if (numericMarks < 0) {
-          errors.push(`Marks for ${subjectCode} cannot be negative`);
+        if (theoryMarks < 0) {
+          errors.push(`Theory marks for ${subjectCode} cannot be negative`);
           continue;
         }
+
+        const practicalMarksField = `${subjectCode}_practical`;
+        let practicalMarks = null; // Initialize as null
+
+        // Only process practical marks if they were submitted and the subject has practical component
+        if (req.body[practicalMarksField] !== undefined && req.body[practicalMarksField] !== "") {
+          practicalMarks = parseFloat(req.body[practicalMarksField]);
+
+          // Validate practical marks if they exist
+          if (isNaN(practicalMarks)) {
+            errors.push(`Practical marks for ${subjectCode} must be a number`);
+            continue;
+          }
+          if (practicalMarks < 0) {
+            errors.push(`Practical marks for ${subjectCode} cannot be negative`);
+            continue;
+          }
+          // Only validate against max marks if subject has practical component
+          if (subjectPracticalMarks[subjectCode] > 0 && practicalMarks > subjectPracticalMarks[subjectCode]) {
+            errors.push(`Practical marks for ${subjectCode} cannot exceed ${subjectPracticalMarks[subjectCode]}`);
+            continue;
+          }
+        }
+
+
+        // Calculate total marks
+        const totalMarks = theoryMarks + practicalMarks;
+
+        // Determine grade and pass status (implement your grading logic here)
+        const { grade, isPassed } = calculateGradeAndStatus(totalMarks, fullMarks + practicalFullMarks);
 
         // Prepare for save/update
         const markData = {
@@ -606,7 +663,10 @@ const addstudentsMarks = async (req, res) => {
           exam_id: examType,
           subject_code: subjectCode,
           subject_id: subjectCodeToIdMap[subjectCode],
-          marks_obtained: numericMarks,
+          marks_obtained: theoryMarks,
+          practical_marks: practicalMarks,
+          grade: grade,
+          is_passed: isPassed,
           academic_year: academicYearToUse,
           class_id: classId,
           section_id: sectionId
@@ -614,8 +674,8 @@ const addstudentsMarks = async (req, res) => {
 
         if (existingResultsMap[subjectCode]) {
           marksToUpdate.push({
+            ...markData,
             id: existingResultsMap[subjectCode].id,
-            data: markData
           });
         } else {
           marksToSave.push(markData);
@@ -635,9 +695,10 @@ const addstudentsMarks = async (req, res) => {
       }
 
       for (const mark of marksToUpdate) {
+        const { id, ...dataToUpdate } = mark;
         await db.examResults.update(
-          mark.data,
-          { where: { id: mark.id }, transaction }
+          dataToUpdate,
+          { where: { id }, transaction }
         );
       }
     });
@@ -653,26 +714,63 @@ const addstudentsMarks = async (req, res) => {
   }
 };
 
+// Helper function for grade calculation (customize according to your grading system)
+function calculateGradeAndStatus(totalMarks, maxMarks) {
+  const percentage = (totalMarks / maxMarks) * 100;
+
+  let grade = 'F';
+  let isPassed = false;
+
+  if (percentage >= 90) {
+    grade = 'A+';
+    isPassed = true;
+  } else if (percentage >= 80) {
+    grade = 'A';
+    isPassed = true;
+  } else if (percentage >= 70) {
+    grade = 'B+';
+    isPassed = true;
+  } else if (percentage >= 60) {
+    grade = 'B';
+    isPassed = true;
+  } else if (percentage >= 50) {
+    grade = 'C+';
+    isPassed = true;
+  } else if (percentage >= 40) {
+    grade = 'C';
+    isPassed = true;
+  } else if (percentage >= 30) {
+    grade = 'D';
+    isPassed = true;
+  }
+
+  return { grade, isPassed };
+}
+
 // Get bulk marks data
 const getBulkMarksData = async (req, res) => {
   try {
     const { class_id, section_id, exam_id, academic_year } = req.query;
 
     // Validate inputs
-    if (!class_id || !section_id || !exam_id) {
-      return res.status(400).json({ error: "Missing required parameters" });
+    if (!class_id || !exam_id) {
+      return res.status(400).json({ error: "Missing required parameters (class_id and exam_id are required)" });
     }
 
     // Build where condition for academic year
-    const academicWhere = academic_year 
+    const academicWhere = academic_year
       ? { academic_year }
       : { is_current: true };
+
+    // Build where condition for class/section
+    const classSectionWhere = section_id
+      ? { class_id, section_id }
+      : { class_id };
 
     // Get all students in the class/section for the academic year
     const studentHistories = await db.student_academic_histories.findAll({
       where: {
-        class_id,
-        section_id,
+        ...classSectionWhere,
         ...academicWhere
       },
       include: [
@@ -687,10 +785,10 @@ const getBulkMarksData = async (req, res) => {
     });
 
     if (studentHistories.length === 0) {
-      return res.status(404).json({ 
-        error: academic_year 
-          ? `No students found in this class/section for ${academic_year}`
-          : "No active students found in this class/section"
+      return res.status(404).json({
+        error: academic_year
+          ? `No students found in ${section_id ? 'this section' : 'this class'} for ${academic_year}`
+          : `No active students found in ${section_id ? 'this section' : 'this class'}`
       });
     }
 
@@ -698,8 +796,12 @@ const getBulkMarksData = async (req, res) => {
     const effectiveAcademicYear = academic_year || studentHistories[0].academic_year;
 
     // Get all subjects for the class/section
+    const subjectWhere = section_id
+      ? { class_id, section_id }
+      : { class_id };
+
     const subjectClasses = await SubjectClass.findAll({
-      where: { class_id, section_id },
+      where: subjectWhere,
       include: [
         {
           model: SubjectList,
@@ -716,17 +818,40 @@ const getBulkMarksData = async (req, res) => {
     });
 
     if (subjectClasses.length === 0) {
-      return res.status(404).json({ error: "No subjects found for this class/section" });
+      return res.status(404).json({
+        error: `No subjects found for ${section_id ? 'this class/section' : 'this class'}`
+      });
     }
 
     // Format subjects data
-    const subjects = subjectClasses.map(sc => ({
-      id: sc.subject.id,
-      name: sc.subject.name,
-      code: sc.subjectCode.code,
-      fullmarks: sc.fullmarks,
-      passmarks: sc.passmarks
-    }));
+    // Format subjects data with no duplicates when section_id is not provided
+    let subjects;
+
+    if (section_id) {
+      // If section is provided, return all subjects as is
+      subjects = subjectClasses.map(sc => ({
+        id: sc.subject.id,
+        name: sc.subject.name,
+        code: sc.subjectCode.code,
+        fullmarks: sc.fullmarks,
+        passmarks: sc.passmarks
+      }));
+    } else {
+      // If only class_id is provided, ensure unique subjects by subject.id
+      const uniqueSubjectMap = new Map();
+      subjectClasses.forEach(sc => {
+        if (!uniqueSubjectMap.has(sc.subject.id)) {
+          uniqueSubjectMap.set(sc.subject.id, {
+            id: sc.subject.id,
+            name: sc.subject.name,
+            code: sc.subjectCode.code,
+            fullmarks: sc.fullmarks,
+            passmarks: sc.passmarks
+          });
+        }
+      });
+      subjects = Array.from(uniqueSubjectMap.values());
+    }
 
     // Get existing marks for these students and exam
     const existingMarks = await ExamResultModel.findAll({
@@ -757,13 +882,16 @@ const getBulkMarksData = async (req, res) => {
     res.json({
       academicYear: effectiveAcademicYear,
       students,
-      subjects
+      subjects,
+      message: section_id
+        ? `Showing students from selected section`
+        : `Showing all students from class (no section selected)`
     });
   } catch (error) {
     console.error("Error getting bulk marks data:", error);
-    res.status(500).json({ 
+    res.status(500).json({
       error: "Error getting bulk marks data",
-      message: error.message 
+      message: error.message
     });
   }
 };
@@ -824,7 +952,7 @@ const saveBulkMarks = async (req, res) => {
     // Validate all requested codes exist
     const invalidCodes = subjectCodes.filter(code => !validSubjectMap[code]);
     if (invalidCodes.length > 0) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         error: "Invalid subject codes",
         invalidCodes,
         message: `The following subject codes are not valid for this class: ${invalidCodes.join(', ')}`
@@ -867,11 +995,14 @@ const saveBulkMarks = async (req, res) => {
     await db.sequelize.transaction(async (t) => {
       // Update existing marks
       for (const mark of marksToUpdate) {
-        await db.examResults.update(mark.data, {
-          where: { id: mark.id },
-          transaction: t
-        });
+        const { id, ...dataToUpdate } = mark;
+        await db.examResults.update(
+          dataToUpdate,
+          { where: { id }, transaction }
+        );
+
       }
+
 
       // Insert new marks
       if (marksToSave.length > 0) {
@@ -879,7 +1010,7 @@ const saveBulkMarks = async (req, res) => {
       }
     });
 
-    res.json({ 
+    res.json({
       success: true,
       message: "Marks saved successfully",
       stats: {
@@ -890,7 +1021,7 @@ const saveBulkMarks = async (req, res) => {
 
   } catch (error) {
     console.error("Error saving bulk marks:", error);
-    res.status(500).json({ 
+    res.status(500).json({
       error: "Error saving bulk marks",
       message: error.message,
       stack: process.env.NODE_ENV === 'development' ? error.stack : undefined

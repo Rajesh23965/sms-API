@@ -183,12 +183,12 @@
                                   <a href="/exams/exam-form-type?termId=<%= term.id %>" class="btn btn-outline-primary" title="Edit">
                                     <i class="fas fa-edit"></i>
                                   </a>
-                                  <a href="/exams/delete?termId=<%= term.id %>" 
-                                     class="btn btn-outline-danger" 
-                                     title="Delete"
-                                     onclick="return confirm('Are you sure? This will delete the term and all its exams.');">
-                                    <i class="fas fa-trash"></i>
-                                  </a>
+                                <a href="/exams/delete?termId=<%= term.id %>" 
+                                  class="btn btn-outline-danger" 
+                                  title="Delete"
+                                  onclick="return confirm('Are you sure? This will delete the term and ALL its associated exams.');">
+                                  <i class="fas fa-trash"></i>
+                                </a>
                                 </div>
                               </td>
                             </tr>

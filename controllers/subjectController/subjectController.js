@@ -6,7 +6,6 @@ const SubjectCode = db.subjectCode;
 const SubjectTeacher = db.subjectTeacher;
 const StudentClass = db.classes;
 const Teacher = db.teachers;
-
 const loadSubjectForm = async (req, res) => {
     try {
         const subjectId = req.query.subjectId;
@@ -56,6 +55,18 @@ const loadSubjectForm = async (req, res) => {
                 ],
             })
             : null;
+
+        // Prepare class-section mappings for the form
+        const classSectionMappings = {};
+        if (subjectData) {
+            subjectData.subject_classes.forEach(sc => {
+                if (!classSectionMappings[sc.class_id]) {
+                    classSectionMappings[sc.class_id] = [];
+                }
+                classSectionMappings[sc.class_id].push(sc.section_id);
+            });
+        }
+
 
         // Fetch paginated subjects with their class and section associations
         const { count, rows: subjects } = await Subject.findAndCountAll({
@@ -111,6 +122,7 @@ const loadSubjectForm = async (req, res) => {
             subjectId,
             success,
             error,
+            classSectionMappings: JSON.stringify(classSectionMappings),
             searchQuery,
             pagination: {
                 totalItems: count,
@@ -134,7 +146,7 @@ const loadSubjectForm = async (req, res) => {
 
 const addOrUpdateSubject = async (req, res) => {
     try {
-        const { name, passmarks, fullmarks, creditHour, section_mapping } = req.body;
+        const { name, passmarks, practicalPassmarks,practicalMarks, fullmarks, creditHour, section_mapping } = req.body;
         const subjectId = req.query.subjectId;
         const redirectURL = "/subjects/subject-form";
 
@@ -146,6 +158,8 @@ const addOrUpdateSubject = async (req, res) => {
                 section_id,
                 passmarks,
                 fullmarks,
+                practicalMarks,
+                practicalPassmarks,
                 creditHour
             };
         });
@@ -181,17 +195,26 @@ const addOrUpdateSubject = async (req, res) => {
             subject.name = name;
             subject.passmarks = passmarks;
             subject.fullmarks = fullmarks;
+            subject.practicalMarks = practicalMarks;
+            subject.practicalPassmarks=practicalPassmarks;
             subject.creditHour = creditHour;
             await subject.save();
 
-
+            // Remove existing associations
             await SubjectClass.destroy({ where: { subject_id: subjectId } });
             await SubjectCode.destroy({ where: { subject_id: subjectId } });
 
             req.session.success = "Subject updated successfully.";
         } else {
             // Create new subject
-            subject = await Subject.create({ name, passmarks, fullmarks, creditHour });
+            subject = await Subject.create({
+                name,
+                passmarks,
+                fullmarks,
+                practicalMarks,
+                practicalPassmarks,
+                creditHour
+            });
             req.session.success = "Subject added successfully.";
         }
 
@@ -213,7 +236,10 @@ const addOrUpdateSubject = async (req, res) => {
                 class_id: cs.class_id,
                 section_id: cs.section_id,
                 passmarks: cs.passmarks,
-                fullmarks: cs.fullmarks
+                practicalMarks: cs.practicalMarks,
+                practicalPassmarks:cs.practicalPassmarks,
+                fullmarks: cs.fullmarks,
+                creditHour: cs.creditHour
             });
 
             // Generate subject code like NEP01, SCI02
@@ -255,7 +281,6 @@ const addOrUpdateSubject = async (req, res) => {
         return res.redirect("/subjects/subject-form");
     }
 };
-
 const deleteSubject = async (req, res) => {
     try {
         const id = req.params.id;

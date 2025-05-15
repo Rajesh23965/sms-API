@@ -121,8 +121,14 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.STRING(10),
         defaultValue: "active",
       },
+      school_id: {
+        type: DataTypes.INTEGER,
+        references: {
+          model: 'schoolinfo',
+          key: 'id'
+        }
+      },
 
-     
     },
     {
       timestamps: true,

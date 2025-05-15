@@ -31,6 +31,13 @@ module.exports = (sequelize, DataTypes) => {
         allowNull: false,
         references: { model: 'sections', key: 'id' }
       },
+       school_id: {
+      type: DataTypes.INTEGER,
+      references: {
+        model: 'schoolinfo',
+        key: 'id'
+      }
+    },
       roll_number: {
         type: DataTypes.STRING(20),
         allowNull: true

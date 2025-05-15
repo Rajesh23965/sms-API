@@ -46,158 +46,190 @@
           </div>
           <div class="">
             <div class="">
-              <form
+            <form
                 action="/subjects/subject-form<%= subjectId ? '?subjectId=' + subjectId : '' %>"
                 method="POST"
                 class="border p-4 rounded bg-light grid grid-cols-1 md:grid-cols-3 gap-4 mb-3"
-              >
+                id="subjectForm"
+                data-mode="<%= subjectId ? 'edit' : 'add' %>"
+            >
                 <div class="mb-3">
-                  <label class="form-label">Subject Name</label>
-                  <input
-                    type="text"
-                    name="name"
-                    class="form-control"
-                    value="<%= subjectData?.name || oldInput.name || '' %>"
-                    required
-                  />
+                    <label class="form-label">Subject Name</label>
+                    <input
+                        type="text"
+                        name="name"
+                        class="form-control <%= errorFields.includes('name') ? 'is-invalid' : '' %>"
+                        value="<%= subjectData?.name || oldInput.name || '' %>"
+                        required
+                    />
                 </div>
 
                 <div class="mb-3">
-                  <label class="form-label">Full Marks</label>
-                  <input
-                    type="text"
-                    name="fullmarks"
-                    class="form-control"
-                    value="<%= subjectData?.fullmarks || oldInput.fullmarks || '' %>"
-                    required
-                  />
+                    <label class="form-label">Full Marks</label>
+                    <input
+                        type="number"
+                        name="fullmarks"
+                        class="form-control <%= errorFields.includes('fullmarks') ? 'is-invalid' : '' %>"
+                        value="<%= subjectData?.fullmarks || oldInput.fullmarks || '' %>"
+                        required
+                    />
                 </div>
 
                 <div class="mb-3">
-                  <label class="form-label">Pass Marks</label>
-                  <input
-                    type="text"
-                    name="passmarks"
-                    class="form-control"
-                    value="<%= subjectData?.passmarks || oldInput.passmarks || '' %>"
-                    required
-                  />
+                    <label class="form-label">Pass Marks</label>
+                    <input
+                        type="number"
+                        name="passmarks"
+                        class="form-control <%= errorFields.includes('passmarks') ? 'is-invalid' : '' %>"
+                        value="<%= subjectData?.passmarks || oldInput.passmarks || '' %>"
+                        required
+                    />
                 </div>
+                
                 <div class="mb-3">
-                  <label class="form-label">Credit hour</label>
-                  <input
-                    type="text"
-                    name="creditHour"
-                    class="form-control"
-                    value="<%= subjectData?.creditHour || oldInput.creditHour || '' %>"
-                    required
-                  />
+                    <label class="form-label">Practical Marks</label>
+                    <input
+                        type="number"
+                        name="practicalMarks"
+                        class="form-control <%= errorFields.includes('practicalMarks') ? 'is-invalid' : '' %>"
+                        value="<%= subjectData?.practicalMarks || oldInput.practicalMarks || '' %>"
+                        required
+                    />
+                </div>
+                 <div class="mb-3">
+                    <label class="form-label">Practical Pass Marks</label>
+                    <input
+                        type="number"
+                        name="practicalPassmarks"
+                        class="form-control <%= errorFields.includes('practicalPassmarks') ? 'is-invalid' : '' %>"
+                        value="<%= subjectData?.practicalPassmarks || oldInput.practicalPassmarks || '' %>"
+                        required
+                    />
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">Credit hour</label>
+                    <input
+                        type="number"
+                        name="creditHour"
+                        class="form-control <%= errorFields.includes('creditHour') ? 'is-invalid' : '' %>"
+                        value="<%= subjectData?.creditHour || oldInput.creditHour || '' %>"
+                        required
+                    />
                 </div>
 
                 <div class="mb-3 col-span-3">
-                  <label class="form-label">Classes</label>
-                  <div class="form-check mb-2">
-                    <input
-                      class="form-check-input"
-                      type="checkbox"
-                      id="checkAllClasses"
-                      onclick="toggleAllClasses(this)"
-                    />
-                    <label class="form-check-label" for="checkAllClasses"
-                      >Select All</label
-                    >
-                  </div>
-
-                  <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                    <% 
-                      // Define the correct order
-                      const classOrder = ['One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten'];
-                      
-                      // Create a sorted copy of the classes array
-                      const sortedClasses = listclass.slice().sort((a, b) => {
-                        return classOrder.indexOf(a.class_name) - classOrder.indexOf(b.class_name);
-                      });
-                      
-                      // Render the sorted classes
-                      sortedClasses.forEach(cls => { 
-                    %>
-                    <div class="mb-3">
-                      <div class="form-check">
-                        <input class="form-check-input class-checkbox"
-                          type="checkbox" name="class_id[]" value="<%= cls.id %>"
-                          id="class_<%= cls.id %>" data-class-id="<%= cls.id %>"
-                          onchange="toggleSections(this)" <%=
-                          (subjectData?.subject_classes?.find(sc => sc.class_id
-                          === cls.id) || (oldInput.class_id &&
-                          oldInput.class_id.includes(cls.id.toString()))) ?
-                          'checked' : '' %> />
-                        <label class="form-check-label" for="class_<%= cls.id %>">
-                          <%= cls.class_name %>
-                        </label>
-                      </div>
-                      
-                      <div id="sections_<%= cls.id %>" class="sections-container ms-4" style="display: none">
-                        <% if (cls.sections && cls.sections.length > 0) { %> 
-                          <% cls.sections.forEach(section => { %>
-                            <div class="form-check">
-                              <input
-                                class="form-check-input section-checkbox"
-                                type="checkbox"
-                                name="section_mapping[]"
-                                value="<%= cls.id %>_<%= section.id %>"
-                                id="section_<%= cls.id %>_<%= section.id %>"
-                                data-section-id="<%= section.id %>"
-                              />
-                              <label class="form-check-label" for="section_<%= cls.id %>_<%= section.id %>">
-                                <%= section.section_name %>
-                              </label>
-                            </div>
-                          <% }) %> 
-                        <% } else { %>
-                          <p class="text-muted small">No sections available</p>
-                        <% } %>
-                      </div>
+                    <label class="form-label">Classes & Sections</label>
+                    <div class="form-check mb-2">
+                        <input
+                            class="form-check-input"
+                            type="checkbox"
+                            id="checkAllClasses"
+                            onclick="toggleAllClasses(this)"
+                        />
+                        <label class="form-check-label" for="checkAllClasses"
+                            >Select All Classes</label
+                        >
                     </div>
-                    <% }) %>
-                  </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                        <% 
+                            // Define the correct order
+                            const classOrder = ['One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten'];
+                            
+                            // Create a sorted copy of the classes array
+                            const sortedClasses = listclass.slice().sort((a, b) => {
+                                return classOrder.indexOf(a.class_name) - classOrder.indexOf(b.class_name);
+                            });
+                            
+                            // Render the sorted classes
+                            sortedClasses.forEach(cls => { 
+                                const isClassSelected = subjectData?.subject_classes?.some(sc => sc.class_id === cls.id) || 
+                                                      (oldInput.class_id && oldInput.class_id.includes(cls.id.toString()));
+                        %>
+                        <div class="mb-3 border p-2 rounded">
+                            <div class="form-check">
+                                <input 
+                                    class="form-check-input class-checkbox"
+                                    type="checkbox" 
+                                    name="class_id[]" 
+                                    value="<%= cls.id %>"
+                                    id="class_<%= cls.id %>" 
+                                    data-class-id="<%= cls.id %>"
+                                    onchange="toggleSections(this)" 
+                                    <%= isClassSelected ? 'checked' : '' %> 
+                                />
+                                <label class="form-check-label" for="class_<%= cls.id %>">
+                                    <%= cls.class_name %>
+                                </label>
+                            </div>
+                            
+                       <div id="sections_<%= cls.id %>" class="sections-container ms-4 mt-2" 
+                    style="display: <%= isClassSelected ? 'block' : 'none' %>">
+                    <% if (cls.sections && cls.sections.length > 0) { %> 
+                        <% cls.sections.forEach(section => { 
+                            const isSectionSelected = subjectData?.subject_classes?.some(sc => 
+                                sc.class_id === cls.id && sc.section_id === section.id);
+                        %>
+                <div class="form-check">
+                <input 
+                    class="form-check-input section-checkbox"
+                    type="checkbox"
+                    name="section_mapping[]"
+                    value="<%= cls.id %>_<%= section.id %>"
+                    id="section_<%= cls.id %>_<%= section.id %>"
+                    <%= isSectionSelected ? 'checked' : '' %>
+                />
+                <label class="form-check-label" for="section_<%= cls.id %>_<%= section.id %>">
+                    <%= section.section_name %>
+                </label>
+            </div>
+        <% }) %> 
+    <% } else { %>
+        <p class="text-muted small">No sections available</p>
+    <% } %>
+</div>
+
+                        </div>
+                        <% }) %>
+                    </div>
                 </div>
                 
-
                 <button type="submit" class="btn btn-success btn-lg w-full">
-                  <i class="fas fa-paper-plane me-2"></i><%= subjectId ?
-                  'Update' : 'Create' %> Subject
+                    <i class="fas fa-paper-plane me-2"></i><%= subjectId ? 'Update' : 'Create' %> Subject
                 </button>
+            </form>
+
+            </div>
+            
+          <div class="flex justify-content-between mb-3 items-center gap-2 mt-4 md:mt-0">
+            <div class="grid grid-cols-1">
+              <form method="GET" action="/subjects/subject-form" class="flex items-center gap-2">
+                <input 
+                  type="search" 
+                  name="search" 
+                  class="border-2 border-gray-600 rounded-lg p-2" 
+                  placeholder="Search by subject, class, or section"
+                  value="<%= searchQuery || '' %>"
+                >
+                <button type="submit" class="btn btn-primary">Search</button>
+                <% if (searchQuery) { %>
+                  <a href="/subjects/subject-form" class="btn btn-secondary">Clear</a>
+                <% } %>
               </form>
             </div>
-  
-<div class="flex justify-content-between mb-3 items-center gap-2 mt-4 md:mt-0">
-  <div class="grid grid-cols-1">
-    <form method="GET" action="/subjects/subject-form" class="flex items-center gap-2">
-      <input 
-        type="search" 
-        name="search" 
-        class="border-2 border-gray-600 rounded-lg p-2" 
-        placeholder="Search by subject, class, or section"
-        value="<%= searchQuery || '' %>"
-      >
-      <button type="submit" class="btn btn-primary">Search</button>
-      <% if (searchQuery) { %>
-        <a href="/subjects/subject-form" class="btn btn-secondary">Clear</a>
-      <% } %>
-    </form>
-  </div>
-  <div class="">
-    <label for="limitSelect">Show</label>
-    <select class="border border-gray-300 rounded-md p-2" style="width: auto;" onchange="changeLimit(this)">
-      <option value="5" <%= pagination.limit == 5 ? 'selected' : '' %>>5</option>
-      <option value="10" <%= pagination.limit == 10 ? 'selected' : '' %>>10</option>
-      <option value="25" <%= pagination.limit == 25 ? 'selected' : '' %>>25</option>
-      <option value="50" <%= pagination.limit == 50 ? 'selected' : '' %>>50</option>
-      <option value="100" <%= pagination.limit == 100 ? 'selected' : '' %>>100</option>
-    </select>
-    <span>entries</span>
-  </div>
-</div>
+            <div class="">
+              <label for="limitSelect">Show</label>
+              <select class="border border-gray-300 rounded-md p-2" style="width: auto;" onchange="changeLimit(this)">
+                <option value="5" <%= pagination.limit == 5 ? 'selected' : '' %>>5</option>
+                <option value="10" <%= pagination.limit == 10 ? 'selected' : '' %>>10</option>
+                <option value="25" <%= pagination.limit == 25 ? 'selected' : '' %>>25</option>
+                <option value="50" <%= pagination.limit == 50 ? 'selected' : '' %>>50</option>
+                <option value="100" <%= pagination.limit == 100 ? 'selected' : '' %>>100</option>
+              </select>
+              <span>entries</span>
+            </div>
+          </div>
             <% if (subjects && subjects.length > 0) { %>
             <div class="">
               <table class="table table-bordered table-hover">

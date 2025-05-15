@@ -50,7 +50,6 @@ router.get("/get-sections/:classId", async (req, res) => {
     const sections = await Section.findAll({
       where: { class_id: req.params.classId },
     });
-    console.log(sections);
     res.json(sections);
   } catch (error) {
     console.error("Error fetching sections:", error);

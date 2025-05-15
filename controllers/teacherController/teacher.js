@@ -195,14 +195,29 @@ const addorupdateteacher = async (req, res) => {
         }
         teacherPayload.image = null;
       }
+
+
+      // If a new file is uploaded, replace the old image
+      if (req.file) {
+        if (teacher.image) {
+          const oldImagePath = path.join(__dirname, '../../public/uploads/teachers', teacher.image);
+          if (fs.existsSync(oldImagePath)) {
+            fs.unlinkSync(oldImagePath); // Delete old image
+          }
+        }
+        teacherPayload.image = req.file.filename;
+      }
+
+
+
       await teacher.update(teacherPayload);
       req.flash("success", "Teacher updated successfully.");
     } else {
       await Teacher.create(teacherPayload);
       req.flash("success", "Teacher added successfully.");
     }
-
     return res.redirect("/teachers/teacher-list");
+
   } catch (error) {
     console.error("Error processing teacher:", error);
     req.flash("error", "Server error. Please try again.");
@@ -373,7 +388,6 @@ const deleteTeacher = async (req, res) => {
           teacher.image
         );
 
-        console.log("Attempting to delete image at:", imagePath); // Debug log
 
 
         if (fs.existsSync(imagePath)) {

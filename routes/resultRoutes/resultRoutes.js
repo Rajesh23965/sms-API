@@ -6,5 +6,6 @@ const resultController = require("../../controllers/ResultController/resultContr
 router.get("/results", resultController.loadResult);
 router.get("/api/student-result", resultController.searchStudentResult);
 router.get("/api/class-results", resultController.getClassResults);
+router.get('/api/sections-by-class', resultController.getSectionsByClass);
 
 module.exports = router;

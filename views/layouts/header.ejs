@@ -32,7 +32,11 @@
     <a class="<%= currentPath === '/' ? 'active' : '' %>" href="/">
       <i class="fas fa-home"></i> <span>Dashboard</span>
     </a>
-  
+   <a class="<%= currentPath.startsWith('/school/school-form') || currentPath.startsWith('/school/school-form')  ? 'active' : '' %>" href="/school/school-form">
+      <i class="fas fa-user-graduate"></i> <span>School Info</span>
+    </a>
+    
+    
     <a class="<%= currentPath.startsWith('/students/student-form') || currentPath.startsWith('/students/student-list')  ? 'active' : '' %>" href="/students/student-form">
       <i class="fas fa-user-graduate"></i> <span>Students</span>
     </a>
@@ -81,5 +85,5 @@
         <span class="toggle-btn" id="toggleBtn"><i class="fas fa-bars"></i></span>
         School Management System
       </h1>
-      <input type="text" placeholder="Search..." />
+      <!-- <input type="text" placeholder="Search..." /> -->
     </div>

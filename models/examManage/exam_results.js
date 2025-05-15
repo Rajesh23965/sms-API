@@ -23,14 +23,28 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.FLOAT,
         allowNull: false,
       },
-      grade:{
-        type:DataTypes.STRING(2)
+      practical_marks: {
+        type: DataTypes.FLOAT,
+        allowNull: true,
+        validate: {
+          min: 0
+        }
       },
-      remarks:{
-        type:DataTypes.TEXT
+      practicalPassmarks: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+        validate: {
+          min: 0,
+        },
       },
-      is_passed:{
-        type:DataTypes.BOOLEAN
+      grade: {
+        type: DataTypes.STRING(2)
+      },
+      remarks: {
+        type: DataTypes.TEXT
+      },
+      is_passed: {
+        type: DataTypes.BOOLEAN
       },
       academic_year: {
         type: DataTypes.STRING(9),
@@ -64,7 +78,7 @@ module.exports = (sequelize, DataTypes) => {
       indexes: [
         {
           unique: false,
-          fields: ['student_id','exam_id','subject_code', 'academic_year', 'class_id','subject_id']
+          fields: ['student_id', 'exam_id', 'subject_code', 'academic_year', 'class_id', 'subject_id']
         }
       ]
     }

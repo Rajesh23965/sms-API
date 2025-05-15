@@ -20,6 +20,20 @@ module.exports = (sequelize, DataTypes) => {
         min: 1,
       },
     },
+    practicalMarks: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      validate: {
+        min: 0,
+      },
+    },
+     practicalPassmarks: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      validate: {
+        min: 0,
+      },
+    },
     creditHour: {
       type: DataTypes.INTEGER,
       allowNull: false,

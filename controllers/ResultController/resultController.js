@@ -29,7 +29,7 @@ const loadResult = async (req, res) => {
   try {
     const classes = await db.classes.findAll();
     const examTypeList = await db.exams.findAll();
-
+    const schoolInfo = await db.schoolinfo.findOne();
     const error = req.session.error || "";
     const success = req.session.success || "";
 
@@ -48,7 +48,8 @@ const loadResult = async (req, res) => {
       examTypeList,
       error,
       success,
-      academicYears
+      academicYears,
+      schoolInfo
     });
   } catch (error) {
     console.error("Error loading result page:", error);
@@ -64,6 +65,7 @@ const searchStudentResult = async (req, res) => {
   }
 
   try {
+    const schoolInfo = await db.schoolinfo.findOne();
 
     // First find the student's academic history for the specified year
     const academicHistory = await db.student_academic_histories.findOne({
@@ -71,14 +73,20 @@ const searchStudentResult = async (req, res) => {
         admission_no: admissionNo,
         academic_year: academicYear,
         ...(classId && { class_id: classId }),
-        ...(sectionId && { section_id: sectionId })
+        ...(sectionId && { section_id: sectionId }),
       },
       include: [
         {
           model: db.students,
           as: 'student',
+          attributes: ["id", "first_name", "middle_name", "last_name", "image"],
           where: { status: 'active' },
-          required: true
+          required: true,
+          include: [{
+            model: db.schoolinfo,
+            as: 'school',
+            attributes: ['id', 'school_name', 'address', 'phone_number', 'email', 'logo']
+          }]
         },
         {
           model: db.classes,
@@ -123,8 +131,8 @@ const searchStudentResult = async (req, res) => {
           }
         ]
       }],
-      raw: true, // Get raw data to inspect
-      nest: true // Keep nested structure
+      raw: true,
+      nest: true
     });
 
 
@@ -173,20 +181,37 @@ const searchStudentResult = async (req, res) => {
     const overallStatus = subjects.every(subj => subj.status === "Pass") ? "Pass" : "Fail";
 
     // Get exam details
-    const exam = await db.exams.findByPk(examTypeId);
-
+       const exam = await db.exams.findOne({
+      where: { id: examTypeId },
+      include: [{
+        model: db.terms,
+        as: 'term',
+        attributes: ['start_date', 'end_date']
+      }]
+    });
     const response = {
+      school: schoolInfo ? {
+        name: schoolInfo.school_name,
+        address: schoolInfo.address,
+        phone: schoolInfo.phone_number,
+        email: schoolInfo.email,
+        logo: schoolInfo.logo
+      } : null,
       student: {
         id: academicHistory.student.id,
         admissionNo: academicHistory.admission_no,
         name: `${academicHistory.student.first_name} ${academicHistory.student.middle_name || ''} ${academicHistory.student.last_name || ''}`.trim(),
         class: academicHistory.class.class_name,
         section: academicHistory.section.section_name,
+        image: academicHistory.student.image
       },
       exam: {
         id: exam.id,
         name: exam.name,
-        date: exam.start_date
+        term: {
+          start_date: exam.term?.start_date,
+          end_date: exam.term?.end_date
+        }
       },
       subjects,
       summary: {
@@ -197,7 +222,7 @@ const searchStudentResult = async (req, res) => {
         overallStatus
       }
     };
-
+console.log(response)
 
     res.json(response);
   } catch (error) {
@@ -286,17 +311,17 @@ const getClassResults = async (req, res) => {
     // Process results for each student
     const results = students.map(student => {
       const studentResults = examResults.filter(er => er.student_id === student.student_id);
-    
+
       const subjects = studentResults.map(result => {
         const subjectClass = result.subjectCodeRef?.subject;
         const fullmarks = subjectClass?.fullmarks || 0;
         const passmarks = subjectClass?.passmarks || 0;
         const obtainedMarks = result.marks_obtained || 0;
-    
+
         const percentage = fullmarks ? (obtainedMarks / fullmarks) * 100 : 0;
         const { grade, point } = calculateGrade(percentage);
         const status = obtainedMarks >= passmarks ? "Pass" : "Fail";
-    
+
         return {
           name: result.subjectCodeRef?.subject?.name || 'Unknown Subject',
           code: result.subject_code,
@@ -309,15 +334,15 @@ const getClassResults = async (req, res) => {
           status
         };
       });
-    
+
       const totalMarks = subjects.reduce((sum, subj) => sum + subj.marks, 0);
       const totalFullMarks = subjects.reduce((sum, subj) => sum + subj.fullMarks, 0);
       const overallPercentage = totalFullMarks ? (totalMarks / totalFullMarks * 100).toFixed(2) : '0.00';
-    
+
       const cgpa = totalMarks > 0 ? calculateCGPA(subjects) : '0.00';
-    
+
       const overallStatus = totalMarks === 0 || subjects.some(subj => subj.status === "Fail") ? "Fail" : "Pass";
-    
+
       return {
         student: {
           id: student.id,
@@ -335,7 +360,7 @@ const getClassResults = async (req, res) => {
         }
       };
     });
-    
+
 
     // Calculate percentile for each student
     const allTotals = results.map(r => r.summary.totalMarks);
@@ -368,11 +393,34 @@ const getClassResults = async (req, res) => {
   }
 };
 
+// In your resultController.js (or equivalent controller file)
+const getSectionsByClass = async (req, res) => {
+  try {
+    const { class_id } = req.query;
+
+    if (!class_id) {
+      return res.status(400).json({ error: "Missing classId in query parameters" });
+    }
+
+    const sectionData = await db.sections.findAll({
+      where: { class_id },
+      // attributes: ['id', 'section_name'],
+      // order: [['section_name', 'ASC']]
+    });
+
+    // console.log("Section========================", sectionData);
+    res.status(200).json(sectionData);
+  } catch (error) {
+    console.error("Error fetching sections:", error);
+    res.status(500).json({ error: "Error fetching sections" });
+  }
+};
 
 
 
 module.exports = {
   loadResult,
   searchStudentResult,
-  getClassResults
+  getClassResults,
+  getSectionsByClass
 };

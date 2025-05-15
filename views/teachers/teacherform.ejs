@@ -78,22 +78,50 @@
                     <label class="form-label">Joining Date</label>
                     <input type="date" name="joining_date" class="form-control <%= errorFields?.includes('joining_date') ? 'is-invalid' : '' %>" value="<%= oldInput?.joining_date || '' %>" />
                   </div>
-                  <div class="mb-3">
-                    <label class="form-label">Photo</label>
-                    <input type="file" name="image" class="form-control <%= errorFields?.includes('image') ? 'is-invalid' : '' %>"/>
-                  </div>
-                  <% if (oldInput.image) { %>
-                    <div class="mb-3">
-                      <label class="form-label">Current Photo</label>
-                      <img src="/uploads/teachers/<%= oldInput.image %>" class="img-thumbnail" style="max-height: 150px;">
-                    </div>
-                  <% } %>
-                  <% if (oldInput.image) { %>
-                    <div class="form-check mb-3">
-                      <input class="form-check-input" type="checkbox" name="removeImage" id="removeImage">
-                      <label class="form-check-label" for="removeImage">Remove current photo</label>
-                    </div>
-                  <% } %>
+                 <div class="mb-3">
+  <label class="form-label">Photo</label>
+  
+  <!-- File input with preview -->
+  <input type="file" 
+         name="image" 
+         id="teacherImageUpload"
+         class="form-control <%= errorFields?.includes('image') ? 'is-invalid' : '' %>"
+         accept="image/jpeg, image/png, image/jpg">
+  
+  <!-- Preview container -->
+  <div id="imagePreviewContainer" class="mt-2" style="display: none;">
+    <img id="imagePreview" 
+         src="#" 
+         alt="Preview of uploaded image" 
+         class="img-thumbnail" 
+         style="max-width: 150px; max-height: 150px;">
+    <button type="button" 
+            id="removePreviewBtn" 
+            class="btn btn-sm btn-danger mt-2">
+      Remove
+    </button>
+  </div>
+  
+  <!-- Current image display -->
+  <% if (oldInput?.image) { %>
+    <div class="mb-3">
+      <label class="form-label">Current Photo</label>
+      <img src="/uploads/teachers/<%= oldInput.image %>" 
+           class="img-thumbnail" 
+           style="max-height: 150px;"
+           id="currentTeacherImage">
+    </div>
+    <div class="form-check mb-3">
+      <input class="form-check-input" 
+             type="checkbox" 
+             name="removeImage" 
+             id="removeImage">
+      <label class="form-check-label" for="removeImage">
+        Remove current photo
+      </label>
+    </div>
+  <% } %>
+</div>
                   
                
                   <div class="mb-3">

@@ -76,18 +76,26 @@ const getSectionsByClasses = async (req, res) => {
     if (!classIds || classIds.length === 0) {
       return res.json([]);
     }
-    const sections = await Section.findAll({
-      where: {
-        class_id: classIds
-      }
-    });
 
+    const sections = await db.sections.findAll({
+      where: {
+        class_id: classIds,
+      },
+      include: [
+        {
+          model: db.classes,
+          as: 'class',
+          attributes: ['id', 'class_name'], 
+        },
+      ],
+    });
     res.json(sections);
   } catch (error) {
     console.error('Error fetching sections:', error);
     res.status(500).json({ error: 'Error fetching sections' });
   }
 };
+
 
 const getSubjectsByClassAndSections = async (req, res) => {
   try {
@@ -183,52 +191,55 @@ const getTotalClass = async (req, res) => {
 // To Get Subject Details By ID
 const viewClassDetails = async (req, res) => {
   try {
-      const subject = await db.subjects.findByPk(req.params.id, {
+    const subject = await db.subjects.findByPk(req.params.id, {
+      include: [
+        {
+          model: db.subjectCode,
+          as: 'subjectCodes',
+          attributes: ['code']
+        },
+        {
+          model: db.classes,
+          as: 'classes',
+          through: { attributes: [] },
+          attributes: ['id', 'class_name'],
           include: [
-              {
-                  model: db.subjectCode,
-                  as: 'subjectCodes',
-                  attributes: ['code']
-              },
-              {
-                  model: db.classes,
-                  as: 'classes',
-                  through: {
-                      attributes: []
-                  },
-                  attributes: ['class_name']
-              },
-              {
-                  model: db.sections,
-                  as: 'sections',
-                  through: {
-                      attributes: []
-                  },
-                  attributes: ['section_name']
-              }
+            {
+              model: db.sections,
+              as: 'sections',
+              attributes: ['section_name']
+            }
           ]
-      });
+        }
+      ]
+    });
 
-      if (!subject) {
-          return res.status(404).json({ error: 'Subject not found' });
-      }
+    if (!subject) {
+      return res.status(404).json({ error: 'Subject not found' });
+    }
 
-      res.json({
-          id: subject.id,
-          name: subject.name,
-          passmarks: subject.passmarks,
-          fullmarks: subject.fullmarks,
-          creditHour: subject.creditHour,
-          createdAt: subject.createdAt,
-          updatedAt: subject.updatedAt,
-          subjectCodes: subject.subjectCodes,
-          classes: subject.classes,
-          sections: subject.sections
-      });
+    // Transforming the data
+    const classSections = subject.classes.map(cls => ({
+      class_name: cls.class_name,
+      sections: cls.sections.map(sec => sec.section_name)
+    }));
+
+    res.json({
+      id: subject.id,
+      name: subject.name,
+      passmarks: subject.passmarks,
+      fullmarks: subject.fullmarks,
+      creditHour: subject.creditHour,
+      createdAt: subject.createdAt,
+      updatedAt: subject.updatedAt,
+      subjectCodes: subject.subjectCodes,
+      classSections: classSections
+    });
   } catch (error) {
-      console.error('Error fetching subject details:', error);
-      res.status(500).json({ error: 'Error fetching subject details' });
+    console.error('Error fetching subject details:', error);
+    res.status(500).json({ error: 'Error fetching subject details' });
   }
 };
+
 
 module.exports = { loadClassForm, addorupdateClass, deleteClass, getTotalClass, getSectionsByClasses, getSubjectsByClassAndSections, viewClassDetails };

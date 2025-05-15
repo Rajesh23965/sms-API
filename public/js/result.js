@@ -5,9 +5,9 @@ $(document).ready(function () {
   let isLoading = false;
 
   // Individual Student Result Search
-  $('#searchStudentBtn').click(function() {
+  $('#searchStudentBtn').click(function () {
     if (isLoading) return;
-    
+
     const admissionNo = $('#admissionNoInput').val();
     const examTypeId = $('#examTypeSelect').val();
     const academicYear = $('#academicYearSelect').val();
@@ -19,7 +19,7 @@ $(document).ready(function () {
 
     isLoading = true;
     $('#searchStudentBtn').html('<i class="fas fa-spinner fa-spin"></i> Searching...');
-    
+
     $.ajax({
       url: '/results/api/student-result',
       method: 'GET',
@@ -28,135 +28,147 @@ $(document).ready(function () {
         examTypeId: examTypeId,
         academicYear: academicYear
       },
-      success: function(response) {
+      success: function (response) {
         currentIndividualResult = response;
         displayStudentResult(response);
       },
-      error: function(xhr) {
+      error: function (xhr) {
         alert('Error fetching student result: ' + (xhr.responseJSON?.error || 'Server error'));
       },
-      complete: function() {
+      complete: function () {
         isLoading = false;
         $('#searchStudentBtn').html('Search');
       }
     });
   });
 
-  $(document).ready(function () {
-    let currentClassResults = null;
-    let isLoading = false;
-  
-    // Class Results Section Handling
-    $('#classIdSelect').change(function () {
-      const classId = $(this).val();
-      $('#sectionIdSelect').empty().append('<option value="">All Sections</option>');
-  
-      if (classId) {
-        $('#sectionIdSelect').prop('disabled', false);
-        $.ajax({
-          url: '/exams/api/sections-by-class',
-          method: 'GET',
-          data: { class_id: classId },
-          success: function (sections) {
-            sections.forEach(section => {
-              $('#sectionIdSelect').append(`<option value="${section.id}">${section.section_name}</option>`);
-            });
-          }
-        });
-      } else {
-        $('#sectionIdSelect').prop('disabled', true);
-      }
-    });
-  
-    // Load Class Results
-    $('#classResultForm').submit(function(e) {
-      e.preventDefault();
-      if (isLoading) return;
-      
-      const academicYear = $('#classAcademicYear').val();
-      const examTypeId = $('#classExamType').val();
-      const classId = $('#classIdSelect').val();
-      const sectionId = $('#sectionIdSelect').val();
-  
-      if (!academicYear || !examTypeId) {
-        alert('Please select at least academic year and exam type');
-        return;
-      }
-  
-      isLoading = true;
-      $('#classResultForm button[type="submit"]').html('<i class="fas fa-spinner fa-spin"></i> Loading...');
-      
+
+  $('#classIdSelect').change(function () {
+    const classId = $(this).val();
+    const $sectionSelect = $('#sectionIdSelect');
+    $sectionSelect.empty().append('<option value="">All Sections</option>');
+
+    if (classId) {
+      $sectionSelect.prop('disabled', false);
+
+      console.log('Sending classId:', classId);
+
       $.ajax({
-        url: '/results/api/class-results',
+        url: `/results/api/sections-by-class?class_id=${classId}`,
         method: 'GET',
-        data: {
-          academicYear: academicYear,
-          examTypeId: examTypeId,
-          classId: classId || '',
-          sectionId: sectionId || ''
+        success: function (response) {
+          if (response && response.length > 0) {
+            let options = '<option value="">All Sections</option>';
+            response.forEach(section => {
+              options += `<option value="${section.id}">${section.section_name}</option>`;
+            });
+            $sectionSelect.html(options).prop('disabled', false);
+          } else {
+            $sectionSelect.html('<option value="">No sections found</option>').prop('disabled', true);
+          }
         },
-        success: function(response) {
-          currentClassResults = response;
-          displayClassResults(response);
-        },
-        error: function(xhr) {
-          alert('Error fetching class results: ' + (xhr.responseJSON?.error || 'Server error'));
-        },
-        complete: function() {
-          isLoading = false;
-          $('#classResultForm button[type="submit"]').html('<i class="fas fa-search me-1"></i>Search Results');
+        error: function (xhr) {
+          console.error('AJAX error:', xhr.responseText);
+          $sectionSelect.html('<option value="">Error loading sections</option>').prop('disabled', true);
         }
       });
-    });
-  
-    // Download Class Results as PDF
-    $(document).on('click', '#downloadClassResultsBtn', function() {
-      if (!currentClassResults) {
-        alert('No class results available to download');
-        return;
+    } else {
+      $sectionSelect.prop('disabled', true);
+    }
+  });
+
+
+
+
+  // Load Class Results
+  $('#classResultForm').submit(function (e) {
+    e.preventDefault();
+    if (isLoading) return;
+
+    const academicYear = $('#classAcademicYear').val();
+    const examTypeId = $('#classExamType').val();
+    const classId = $('#classIdSelect').val();
+    const sectionId = $('#sectionIdSelect').val();
+
+    if (!academicYear || !examTypeId) {
+      alert('Please select at least academic year and exam type');
+      return;
+    }
+
+    isLoading = true;
+    $('#classResultForm button[type="submit"]').html('<i class="fas fa-spinner fa-spin"></i> Loading...');
+
+    $.ajax({
+      url: '/results/api/class-results',
+      method: 'GET',
+      data: {
+        academicYear,
+        examTypeId,
+        classId: classId || '',
+        sectionId: sectionId || ''
+      },
+      success: function (response) {
+        currentClassResults = response;
+        displayClassResults(response);
+      },
+      error: function (xhr) {
+        alert('Error fetching class results: ' + (xhr.responseJSON?.error || 'Server error'));
+      },
+      complete: function () {
+        isLoading = false;
+        $('#classResultForm button[type="submit"]').html('<i class="fas fa-search me-1"></i>Search Results');
       }
-      downloadClassResultsPDF(currentClassResults);
-    });
-  
-    // Download Class Results as CSV
-    $(document).on('click', '#downloadClassResultsCSV', function() {
-      if (!currentClassResults) {
-        alert('No class results available to download');
-        return;
-      }
-      downloadClassResultsCSV(currentClassResults);
-    });
-  
-    // Print Class Results
-    $(document).on('click', '#printClassResultsBtn', function() {
-      window.print();
-    });
-  
-    // View Individual Result from Class Results
-    $(document).on('click', '.view-individual-result', function() {
-      const admissionNo = $(this).data('admissionno');
-      const examTypeId = currentClassResults.exam.id;
-      const academicYear = $('#classAcademicYear').val();
-      
-      $('#admissionNoInput').val(admissionNo);
-      $('#examTypeSelect').val(examTypeId);
-      $('#academicYearSelect').val(academicYear);
-      $('#searchStudentBtn').click();
-      $('#individual-tab').tab('show');
     });
   });
-  
+
+
+  // Download PDF
+  $(document).off('click', '#downloadClassResultsBtn').on('click', '#downloadClassResultsBtn', function () {
+    if (!currentClassResults) {
+      alert('No class results available to download');
+      return;
+    }
+    downloadClassResultsPDF(currentClassResults);
+  });
+
+  // Download CSV
+  $(document).off('click', '#downloadClassResultsCSV').on('click', '#downloadClassResultsCSV', function () {
+    if (!currentClassResults) {
+      alert('No class results available to download');
+      return;
+    }
+    downloadClassResultsCSV(currentClassResults);
+  });
+
+  // Print
+  $(document).on('click', '#printClassResultsBtn', function () {
+    window.print();
+  });
+  // View individual student result
+  $(document).on('click', '.view-individual-result', function () {
+    const admissionNo = $(this).data('admissionno');
+    const examTypeId = currentClassResults.exam.id;
+    const academicYear = $('#classAcademicYear').val();
+
+    $('#admissionNoInput').val(admissionNo);
+    $('#examTypeSelect').val(examTypeId);
+    $('#academicYearSelect').val(academicYear);
+    $('#searchStudentBtn').click();
+    $('#individual-tab').tab('show');
+  });
+
+
   // Display Class Results
   function displayClassResults(response) {
     const container = $('#classResultsContainer');
     const table = $('#classResultsTable tbody');
-    
+
     // Update header info
     $('#classExamName').text(response.exam.name);
     $('#className').text(response.class);
     $('#sectionName').text(response.section);
     $('#classResultsHeader').text(`${response.class} ${response.section ? `- ${response.section}` : ''} Results`);
-  
+
     // Clear and populate results
     table.empty();
     response.results.forEach((result, index) => {
@@ -177,25 +189,43 @@ $(document).ready(function () {
         </tr>`;
       table.append(row);
     });
-  
+
     // Show the container
     container.removeClass('d-none');
   }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
   
+
   // Download Class Results as PDF
   function downloadClassResultsPDF(response) {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
-  
+
     // Header
     doc.setFontSize(18).setFont('helvetica', 'bold');
     doc.text('SCHOOL NAME', 148, 15, { align: 'center' });
     doc.setFontSize(14).setFont('helvetica', 'normal');
     doc.text('CLASS RESULTS', 148, 22, { align: 'center' });
     doc.text(`${response.class} - ${response.section} | ${response.exam.name}`, 148, 28, { align: 'center' });
-  
+
     // Prepare table data
-    const headers = ['S.N.', 'Student Name', 'Admission No', 'Total Marks', 'Percentage', 'CGPA', 'Status', 'Percentile'];
+    const headers = ['S.N.', 'Student Name', 'Admission No', 'Total Marks', 'Percentage', 'CGPA', 'Status',];
     const rows = response.results.map((result, index) => [
       index + 1,
       result.student.name,
@@ -204,9 +234,8 @@ $(document).ready(function () {
       result.summary.overallPercentage + '%',
       result.summary.cgpa,
       result.summary.overallStatus,
-      result.summary.percentile + '%'
     ]);
-  
+
     // Create table
     doc.autoTable({
       startY: 35,
@@ -215,21 +244,21 @@ $(document).ready(function () {
       headStyles: { fillColor: [41, 128, 185], textColor: 255, fontStyle: 'bold' },
       margin: { left: 10 }
     });
-  
+
     // Footer
     doc.setFontSize(10)
-       .text(`Generated on: ${new Date().toLocaleDateString()}`, 148, doc.lastAutoTable.finalY + 10, { align: 'center' });
-  
+      .text(`Generated on: ${new Date().toLocaleDateString()}`, 148, doc.lastAutoTable.finalY + 10, { align: 'center' });
+
     doc.save(`${response.class}_${response.section || 'AllSections'}_${response.exam.name.replace(/\s+/g, '_')}_Results.pdf`);
   }
-  
+
   // Download Class Results as CSV
   function downloadClassResultsCSV(response) {
     let csvContent = "data:text/csv;charset=utf-8,";
-    
+
     // Headers
-    csvContent += "S.N.,Student Name,Admission No,Total Marks,Percentage,CGPA,Status,Percentile\n";
-    
+    csvContent += "S.N.,Student Name,Admission No,Total Marks,Percentage,CGPA,Status\n";
+
     // Data rows
     response.results.forEach((result, index) => {
       csvContent += [
@@ -240,10 +269,9 @@ $(document).ready(function () {
         result.summary.overallPercentage,
         result.summary.cgpa,
         result.summary.overallStatus,
-        result.summary.percentile
       ].join(",") + "\n";
     });
-    
+
     // Create download link
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
@@ -255,7 +283,7 @@ $(document).ready(function () {
   }
 
   // Download Individual Result
-  $(document).on('click', '#downloadIndividualResultBtn', function() {
+  $(document).off('click', '#downloadIndividualResultBtn').on('click', '#downloadIndividualResultBtn', function () {
     if (!currentIndividualResult) {
       alert('No individual result data available to download');
       return;
@@ -263,32 +291,24 @@ $(document).ready(function () {
     downloadIndividualMarksheet(currentIndividualResult);
   });
 
-  // Download Class Results (Single PDF)
-  $(document).on('click', '#downloadClassResultsBtn', function() {
-    if (!currentClassResults) {
-      alert('No class results available to download');
-      return;
-    }
-    downloadClassResultsPDF(currentClassResults);
-  });
 
   // Download All Individual Marksheets (ZIP)
-  $(document).on('click', '#downloadAllMarksheetsBtn', function() {
+  $(document).off('click', '#downloadAllMarksheetsBtn').on('click', '#downloadAllMarksheetsBtn', function () {
     if (!currentClassResults) {
       alert('No class results available to download');
       return;
     }
-    
+
     // Show processing message
     const btn = $(this);
     const originalHtml = btn.html();
     btn.html('<i class="fas fa-spinner fa-spin"></i> Preparing...');
     btn.prop('disabled', true);
-    
+
     // Create zip file with all marksheets
     const zip = new JSZip();
     const folder = zip.folder(`${currentClassResults.class}_${currentClassResults.section}_Results`);
-    
+
     // Process each student result
     const promises = currentClassResults.results.map(result => {
       return generateIndividualMarksheetPDF(result).output('blob').then(blob => {
@@ -296,11 +316,11 @@ $(document).ready(function () {
         folder.file(filename, blob);
       });
     });
-    
-    
+
+
     // Generate and download zip
     Promise.all(promises).then(() => {
-      zip.generateAsync({type: 'blob'}).then(content => {
+      zip.generateAsync({ type: 'blob' }).then(content => {
         saveAs(content, `${currentClassResults.class}_${currentClassResults.section}_Individual_Results.zip`);
         btn.html(originalHtml);
         btn.prop('disabled', false);
@@ -309,16 +329,46 @@ $(document).ready(function () {
   });
 
   // Print Class Results
-  $('#printClassResultsBtn').click(function() {
+  $('#printClassResultsBtn').click(function () {
     window.print();
   });
 });
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 // Display Individual Student Result
 function displayStudentResult(response) {
   const container = $('#studentResultContainer');
   const subjectsTable = $('#studentSubjectsTable');
-  
+
   // Update student information
   $('#studentName').text(response.student.name);
   $('#studentAdmissionNo').text(response.student.admissionNo);
@@ -356,167 +406,195 @@ function displayStudentResult(response) {
   container.removeClass('d-none');
 }
 
-// Display Class Results
-function displayClassResults(response) {
-  const container = $('#classResultsContainer');
-  const table = $('#classResultsTable');
-  const thead = table.find('thead');
-  const tbody = table.find('tbody');
-  const header = $('#classResultsHeader');
 
-  // Clear existing content
-  thead.find('th.subject-header').remove();
-  tbody.empty();
-
-  // Set header
-  header.html(`${response.class} - ${response.section} | ${response.exam.name} Results`);
-
-  // Add subject columns if results exist
-  if (response.results.length > 0 && response.results[0].subjects) {
-    const headerRow1 = thead.find('tr:first');
-    const headerRow2 = thead.find('tr:eq(1)');
-    
-    response.results[0].subjects.forEach(subj => {
-      headerRow1.append(`<th colspan="2" class="subject-header">${subj.name}</th>`);
-      headerRow2.append(`<th class="subject-header">Marks</th>`);
-      headerRow2.append(`<th class="subject-header">Grade</th>`);
-    });
-  }
-
-  // Populate student rows
-  response.results.forEach((result, index) => {
-    const row = `
-      <tr>
-        <td>${index + 1}</td>
-        <td>${result.student.name}</td>
-        <td>${result.student.admissionNo}</td>
-        <td>${result.summary.totalMarks}</td>
-        <td>${result.summary.cgpa}</td>
-        <td><span class="badge ${result.summary.overallStatus === 'Pass' ? 'bg-success' : 'bg-danger'}">${result.summary.overallStatus}</span></td>
-        ${result.subjects.map(subj => `
-          <td>${subj.marks}/${subj.fullMarks}</td>
-          <td>${subj.grade}</td>
-        `).join('')}
-      </tr>`;
-    tbody.append(row);
+//individual Result PDF
+async function downloadIndividualMarksheet(response) {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({
+    orientation: "portrait",
+    unit: "mm",
+    format: "a4",
+    filters: ["ASCIIHexEncode"],
   });
 
-  container.removeClass('d-none');
-}
+  // Constants
+  const pageWidth = 210; // A4 width
+  const pageHeight = 297; // A4 height
+  const margin = 15;
+  const logoSize = 20;
+  let yPos = 10;
 
-// PDF Generation Functions
-function generateIndividualMarksheetPDF(response) {
-  const jsPDFLib = window.jspdf;
-    if (!jsPDFLib) {
-      alert("jsPDF is not loaded. Please check your script tags.");
-      return;
+  const styles = {
+    header1: { fontSize: 18, fontStyle: "bold", lineHeight: 1.2 },
+    header2: { fontSize: 14, fontStyle: "bold", lineHeight: 1.2 },
+    normal: { fontSize: 11, lineHeight: 1.2 },
+    small: { fontSize: 10, lineHeight: 1.2 },
+  };
+
+  // Normalize image paths
+  let schoolLogoPath = response.school?.logo;
+  if (schoolLogoPath && !schoolLogoPath.startsWith('http')) {
+    schoolLogoPath = `http://localhost:5001/uploads/school/${schoolLogoPath.split('/').pop()}`;
+  }
+
+  let studentImagePath = response.student?.image;
+  if (studentImagePath && !studentImagePath.startsWith('http')) {
+    studentImagePath = `http://localhost:5001/uploads/students/${studentImagePath.split('/').pop()}`;
+  }
+
+  // Add images (school logo and student photo)
+  try {
+    if (schoolLogoPath) {
+      const schoolLogoImg = await loadImage(schoolLogoPath);
+      doc.addImage(schoolLogoImg, 'JPEG', margin, yPos + 5, logoSize, logoSize);
     }
-  
-    const { jsPDF } = jsPDFLib;
-    const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-  
-  // Header
-  doc.setFontSize(18).setFont('helvetica', 'bold');
-  doc.text('SCHOOL/COLLEGE NAME', 105, 15, { align: 'center' });
-  doc.setFontSize(14).setFont('helvetica', 'normal');
-  doc.text('Address Line 1, City - PINCODE', 105, 22, { align: 'center' });
-  doc.setFontSize(16).setFont('helvetica', 'bold');
-  doc.text('ACADEMIC REPORT CARD', 105, 32, { align: 'center' });
 
-  // Student Info
-  doc.setFontSize(12);
-  doc.text(`Name: ${response.student.name}`, 20, 45);
-  doc.text(`Admission No: ${response.student.admissionNo}`, 20, 52);
-  doc.text(`Class: ${response.student.class} (${response.student.section})`, 120, 45);
-  doc.text(`Exam: ${response.exam.name}`, 120, 52);
-
-  // Subjects Table
-  doc.autoTable({
-    startY: 60,
-    head: [['Subject', 'Code', 'Full Marks', 'Pass Marks', 'Obtained', 'Percentage', 'Grade', 'Status']],
-    body: response.subjects.map(subject => [
-      subject.name, subject.code, subject.fullMarks, subject.passMarks, 
-      subject.marks, `${subject.percentage}%`, subject.grade, subject.status
-    ]),
-    headStyles: { fillColor: [41, 128, 185], textColor: 255, fontStyle: 'bold' },
-    margin: { left: 15 }
-  });
-
-  // Summary and Footer
-  const finalY = doc.lastAutoTable.finalY + 10;
-  doc.setFont('helvetica', 'bold').text('Result Summary:', 20, finalY);
-  doc.setFont('helvetica', 'normal');
-  doc.text(`Total Marks: ${response.summary.totalMarks}`, 20, finalY + 8);
-  doc.text(`Percentage: ${response.summary.overallPercentage}%`, 20, finalY + 16);
-  doc.text(`CGPA: ${response.summary.cgpa}`, 120, finalY + 8);
-  doc.setFont('helvetica', 'bold')
-     .setTextColor(response.summary.overallStatus === 'Pass' ? [39, 174, 96] : [231, 76, 60])
-     .text(`Status: ${response.summary.overallStatus}`, 120, finalY + 16);
-  doc.setTextColor(0, 0, 0)
-     .setFontSize(10)
-     .text('Principal\'s Signature', 40, finalY + 30)
-     .text('Class Teacher\'s Signature', 140, finalY + 30)
-     .text(`Date: ${new Date().toLocaleDateString()}`, 105, finalY + 40, { align: 'center' });
-
-  return doc;
-}
-
-function downloadIndividualMarksheet(response) {
-  const jsPDFLib = window.jspdf;
-  if (!jsPDFLib) {
-    alert("jsPDF is not loaded. Please check your script tags.");
-    return;
+    if (studentImagePath) {
+      const studentImg = await loadImage(studentImagePath);
+      doc.addImage(studentImg, 'JPEG', pageWidth - margin - logoSize, yPos + 5, logoSize, logoSize);
+    }
+  } catch (error) {
+    console.error("Error loading images:", error);
   }
 
-  const { jsPDF } = jsPDFLib;
-  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+  // School information
+  doc.setFont("helvetica", styles.header1.fontStyle)
+    .setFontSize(styles.header1.fontSize)
+    .text(response.school.name, pageWidth / 2, yPos + 10, { align: "center" })
+    .setFontSize(styles.normal.fontSize)
+    .text(response.school.address, pageWidth / 2, yPos + 16, { align: "center" });
 
-  // Header
-  doc.setFontSize(18).setFont('helvetica', 'bold');
-  doc.text('IT Home Nepal', 105, 15, { align: 'center' });
-  doc.setFontSize(14).setFont('helvetica', 'normal');
-  doc.text('New-Baneshwor, Kathmandu', 105, 22, { align: 'center' });
-  doc.setFontSize(16).setFont('helvetica', 'bold');
-  doc.text('ACADEMIC REPORT CARD', 105, 32, { align: 'center' });
+  yPos += 30;
 
-  // Student Info
-  doc.setFontSize(12);
-  doc.text(`Name: ${response.student.name}`, 20, 45);
-  doc.text(`Admission No: ${response.student.admissionNo}`, 20, 52);
-  doc.text(`Class: ${response.student.class} (${response.student.section})`, 120, 45);
-  doc.text(`Exam: ${response.exam.name}`, 120, 52);
+  // Marksheet title
+  doc.setFontSize(styles.header2.fontSize)
+    .setFont("helvetica", "bold")
+    .text("ACADEMIC REPORT CARD", pageWidth / 2, yPos, { align: "center" })
+    .setFontSize(styles.small.fontSize)
+    .setFont("helvetica", "italic")
+    .text(`Academic Year: ${response.academicYear} | ${response.exam.name}`, pageWidth / 2, yPos + 6, { align: "center" });
 
-  // Subjects Table
-  const subjectData = response.subjects.map(subject => [
-    subject.name,
-    subject.code,
-    subject.fullMarks,
-    subject.passMarks,
-    subject.marks,
-    `${subject.percentage}%`,
-    subject.grade,
-    subject.status
-  ]);
+  yPos += 15;
 
-  doc.autoTable({
-    startY: 60,
-    head: [['Subject', 'Code', 'Full Marks', 'Pass Marks', 'Obtained Marks', 'Percentage', 'Grade', 'Status']],
-    body: subjectData,
-    styles: { fontSize: 10 },
+  // Student info
+  const studentInfo = [
+    { label: "Student Name", value: response.student.name },
+    { label: "Admission No", value: response.student.admissionNo },
+    { label: "Class", value: `${response.student.class} (${response.student.section})` },
+    { label: "Roll Number", value: response.student.rollNumber || "N/A" },
+  ];
+
+  studentInfo.forEach((info, index) => {
+    const x = index < 2 ? margin : pageWidth / 2;
+    const lineY = yPos + (index % 2) * 8;
+
+    doc.setFont("helvetica", "bold")
+      .setFontSize(styles.normal.fontSize)
+      .text(`${info.label}:`, x, lineY)
+      .setFont("helvetica", "normal")
+      .text(info.value, x + 30, lineY);
   });
 
-  // Summary
-  let finalY = doc.lastAutoTable.finalY || 100;
-  doc.setFontSize(12).setFont('helvetica', 'bold');
-  doc.text(`Total Marks: ${response.summary.totalMarks}`, 20, finalY + 10);
-  doc.text(`Percentage: ${response.summary.overallPercentage}%`, 20, finalY + 18);
-  doc.text(`CGPA: ${response.summary.cgpa}`, 120, finalY + 10);
-  doc.text(`Result: ${response.summary.overallStatus}`, 120, finalY + 18);
+  yPos += 20;
 
-  // Save file
-  const filename = `${response.student.name.replace(/\s+/g, '_')}_Marksheet.pdf`;
-  doc.save(filename);
+  // Subject table
+  const columns = [
+    { header: "Subject", dataKey: "subject" },
+    { header: "Code", dataKey: "code" },
+    { header: "Theory", dataKey: "theory" },
+    { header: "Practical", dataKey: "practical" },
+    { header: "Total", dataKey: "total" },
+    { header: "Grade", dataKey: "grade" },
+    { header: "Status", dataKey: "status" },
+  ];
+
+  const rows = response.subjects.map(subject => ({
+    subject: subject.name,
+    code: subject.code,
+    theory: subject.theoryMarks || "-",
+    practical: subject.practicalMarks || "-",
+    total: subject.marks,
+    grade: subject.grade,
+    status: subject.status,
+  }));
+
+  doc.autoTable({
+    startY: yPos,
+    head: [columns.map(col => col.header)],
+    body: rows.map(row => columns.map(col => row[col.dataKey])),
+    theme: "grid",
+    styles: {
+      fontSize: styles.small.fontSize,
+      cellPadding: 2,
+      overflow: "linebreak",
+    },
+    headerStyles: {
+      fillColor: [51, 51, 51],
+      textColor: 255,
+      fontStyle: "bold",
+    },
+    columnStyles: {
+      0: { cellWidth: 45 },
+      1: { cellWidth: 20 },
+      2: { cellWidth: 20 },
+      3: { cellWidth: 25 },
+      4: { cellWidth: 20 },
+      5: { cellWidth: 15 },
+      6: { cellWidth: 20 },
+    },
+    margin: { left: margin, right: margin },
+  });
+
+  // Summary section
+  const summaryY = doc.lastAutoTable.finalY + 10;
+  const summaryData = [
+    { label: "Total Marks Obtained:", value: response.summary.totalMarks },
+    { label: "Percentage:", value: `${response.summary.overallPercentage}%` },
+    { label: "CGPA:", value: response.summary.cgpa },
+    { label: "Result Status:", value: response.summary.overallStatus },
+  ];
+
+  summaryData.forEach((item, index) => {
+    const x = index % 2 === 0 ? margin : pageWidth / 2;
+    const y = summaryY + Math.floor(index / 2) * 10;
+
+    doc.setFont("helvetica", "bold")
+      .setFontSize(styles.normal.fontSize)
+      .text(item.label, x, y)
+      .setFont("helvetica", "normal")
+      .text(item.value.toString(), x + 35, y);
+  });
+
+  // Footer
+  const footerY = pageHeight - 15;
+  doc.setFontSize(styles.small.fontSize)
+    .setTextColor(100)
+    .text("Generated on: " + new Date().toLocaleDateString(), margin, footerY)
+    .text("Official School Stamp", pageWidth - margin - 40, footerY, {
+      align: "right",
+    });
+
+  // Border
+  doc.setDrawColor(200)
+    .rect(margin - 5, margin - 5, pageWidth - margin * 2 + 10, pageHeight - margin * 2 + 10);
+
+  // Save PDF
+  doc.save(`${response.student.name.replace(/ /g, "_")}_Marksheet.pdf`);
 }
+
+// Image loader
+function loadImage(src) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = 'Anonymous';
+    img.onload = () => resolve(img);
+    img.onerror = reject;
+    img.src = src;
+  });
+}
+
+
+//Class Result PDF
 
 function downloadClassResultsPDF(response) {
   const { jsPDF } = window.jspdf;
@@ -563,7 +641,7 @@ function downloadClassResultsPDF(response) {
 
   // Footer
   doc.setFontSize(10)
-     .text(`Generated on: ${new Date().toLocaleDateString()}`, 148, doc.lastAutoTable.finalY + 10, { align: 'center' });
+    .text(`Generated on: ${new Date().toLocaleDateString()}`, 148, doc.lastAutoTable.finalY + 10, { align: 'center' });
 
   doc.save(`${response.class}_${response.section}_${response.exam.name.replace(/\s+/g, '_')}_Results.pdf`);
 }

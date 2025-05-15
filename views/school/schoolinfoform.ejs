@@ -1,0 +1,224 @@
+<%- include('../layouts/header') %>
+
+<div class="container-fluid">
+  <div class="row justify-content-center">
+    <div class="col-lg-12">
+      <div class="card shadow-lg rounded-0">
+        <div class="card-header bg-danger text-white d-flex justify-content-between align-items-center">
+          <h3 class="mb-0"><i class="fas fa-school me-2"></i>School Information Management</h3>
+                      <a href="/school/school-form" class="btn btn-light">Refresh</a>
+
+        </div>
+
+        <div class="card-body p-4">
+          <!-- Alert Messages -->
+          <% if (success) { %>
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+              <%= success %>
+              <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+          <% } %>
+          <% if (error) { %>
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+              <%= error %>
+              <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+          <% } %>
+
+          <!-- Statistics -->
+           <div class="card  mb-4">
+            <div class="card-body">
+              <div class="row mb-4">
+                <div class="col-md-6">
+                    <div class="card bg-info text-white">
+                    <div class="card-body text-center">
+                        <h5><i class="fas fa-users"></i> Total Students</h5>
+                        <h2 class="mb-0"><%= totalStudent%></h2>
+                    </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card bg-success text-white">
+                    <div class="card-body text-center">
+                        <h5><i class="fas fa-chalkboard-teacher"></i> Total Teachers</h5>
+                        <h2 class="mb-0"><%=totalTeacher %></h2>
+                    </div>
+                    </div>
+                </div>
+                </div>
+            </div>
+          </div>
+
+          <!-- School Form -->
+          <div class="card border-primary mb-4">
+            <div class="card-header bg-primary text-white">
+              <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i>School Details</h5>
+            </div>
+            <div class="card-body">
+              <form action="/school/api/schoolinfo" method="POST" enctype="multipart/form-data" novalidate>
+                <% if (school) { %>
+                  <input type="hidden" name="id" value="<%= school.id %>">
+                <% } %>
+
+                <div class="row g-3">
+                  <div class="col-md-6">
+                    <label class="form-label">School Name <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" name="school_name" value="<%= school ? school.school_name : '' %>" required>
+                  </div>
+
+                  <div class="col-md-6">
+                    <label class="form-label">Established Date</label>
+                    <input type="date" class="form-control" name="established_date" value="<%= school ? school.established_date.toISOString().split('T')[0] : '' %>" required>
+                  </div>
+
+                  <div class="col-md-6">
+                    <label class="form-label">School Type</label>
+                    <select class="form-select" name="school_type" required>
+                      <option value="Private" <%= school?.school_type === 'Private' ? 'selected' : '' %>>Private</option>
+                      <option value="Public" <%= school?.school_type === 'Public' ? 'selected' : '' %>>Public</option>
+                      <option value="Charter" <%= school?.school_type === 'Charter' ? 'selected' : '' %>>Charter</option>
+                      <option value="Other" <%= school?.school_type === 'Other' ? 'selected' : '' %>>Other</option>
+                    </select>
+                  </div>
+
+                  <div class="col-md-6">
+                <label class="form-label">Logo</label>
+                    <!-- File input with preview container -->
+                <div class="mb-3">
+                  <input type="file" 
+                        name="image" 
+                        id="imageUpload"
+                        class="form-control <%= errorFields.includes('logo') ? 'is-invalid' : '' %>"
+                        accept="image/jpeg, image/png, image/jpg">
+                  
+                  <!-- Preview container (initially hidden) -->
+                  <div id="imagePreviewContainer" class="mt-2" style="display: none;">
+                    <img id="imagePreview" 
+                        src="#" 
+                        alt="Preview of uploaded image" 
+                        class="img-thumbnail" 
+                        style="max-width: 150px; max-height: 150px;">
+                    <button type="button" 
+                            id="removePreview" 
+                            class="btn btn-sm btn-danger mt-2">
+                      Remove
+                    </button>
+                  </div>
+                </div>
+                  
+                <% if (school && school.logo) { %>
+                  <div class="mb-2">
+                    <img src="/uploads/school/<%= school.logo %>" 
+                        alt="Current School Logo" 
+                        class="img-thumbnail current-image" 
+                        style="max-width: 150px; max-height: 150px;"
+                        id="currentImage">
+                    <div class="form-check mt-2">
+                      <input class="form-check-input" type="checkbox" name="delete_image" id="deleteImage">
+                      <label class="form-check-label text-danger" for="deleteImage">
+                        Remove current logo
+                      </label>
+                    </div>
+                  </div>
+                <% } %>
+                <% if (errorFields.includes('image')) { %>
+                  <div class="invalid-feedback">Please upload a valid image (JPEG, JPG, PNG)</div>
+                <% } %>
+              </div>
+                  <!-- Contact Info -->
+                  <div class="col-12">
+                    <h5 class="mt-4 text-primary"><i class="fas fa-address-book me-2"></i>Contact Information</h5>
+                  </div>
+
+                  <div class="col-md-6">
+                    <label class="form-label">Email Address <span class="text-danger">*</span></label>
+                    <input type="email" class="form-control" name="email" value="<%= school ? school.email : '' %>" required>
+                  </div>
+
+                  <div class="col-md-6">
+                    <label class="form-label">Phone Number</label>
+                    <input type="tel" class="form-control" name="phone_number" value="<%= school ? school.phone_number : '' %>">
+                  </div>
+
+                  <div class="col-12">
+                    <label class="form-label">Address <span class="text-danger">*</span></label>
+                    <textarea class="form-control" name="address" rows="3" required><%= school ? school.address : '' %></textarea>
+                  </div>
+
+                  <!-- Additional Info -->
+                  <div class="col-12">
+                    <h5 class="mt-4 text-primary"><i class="fas fa-info-circle me-2"></i>Additional Information</h5>
+                  </div>
+
+                  <div class="col-md-6">
+                    <label class="form-label">Principal Name</label>
+                    <input type="text" class="form-control" name="principal_name" value="<%= school ? school.principal_name : '' %>">
+                  </div>
+
+                  <div class="col-md-6">
+                    <label class="form-label">Website</label>
+                    <input type="url" class="form-control" name="website" value="<%= school ? school.website : '' %>">
+                  </div>
+
+                  <div class="col-12">
+                    <label class="form-label">Affiliation</label>
+                    <input type="text" class="form-control" name="affiliation" value="<%= school ? school.affiliation : '' %>">
+                  </div>
+
+                  <div class="col-12 text-center mt-4">
+                    <button type="submit" class="btn btn-primary btn-lg">
+                      <i class="fas fa-save me-2"></i>Save School Information
+                    </button>
+                  </div>
+                </div>
+              </form>
+            </div>
+          </div>
+
+          <!-- Records Table -->
+          <div class="card border-primary">
+            <div class="card-header bg-primary text-white">
+              <h5 class="mb-0"><i class="fas fa-table me-2"></i>School Records</h5>
+            </div>
+            <div class="card-body">
+              <div class="table-responsive">
+                <table class="table table-bordered table-hover align-middle">
+                  <thead class="table-dark">
+                    <tr>
+                      <th>School Name</th>
+                      <th>Established</th>
+                      <th>Type</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <% schools.forEach(school => { %>
+                      <tr>
+                        <td><%= school.school_name %></td>
+                        <td><%= school.established_date.toISOString().split('T')[0] %></td>
+                        <td><%= school.school_type %></td>
+                        <td>
+                          <a href="/school/school-form?edit=<%= school.id %>" class="btn btn-sm btn-warning me-2">
+                            <i class="fas fa-edit"></i> Edit
+                          </a>
+                          <form action="/school/delete-record/<%= school.id %>" method="POST" class="d-inline">
+                            <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure?')">
+                              <i class="fas fa-trash"></i> Delete
+                            </button>
+                          </form>
+                        </td>
+                      </tr>
+                    <% }) %>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<%- include('../layouts/footer') %>

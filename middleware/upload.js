@@ -35,7 +35,7 @@ const createUploader = (folder) => {
 
   return multer({
     storage: storage,
-    limits: { fileSize: 2 * 1024 * 1024 }, // 2MB
+    limits: { fileSize: 2 * 1024 * 1024 }, 
     fileFilter: fileFilter
   });
 };
@@ -43,8 +43,9 @@ const createUploader = (folder) => {
 // Create specific uploaders
 const studentUpload = createUploader('students');
 const teacherUpload = createUploader('teachers');
-
+const schoolUpload=createUploader('school');
 module.exports = {
   studentUpload,
-  teacherUpload
+  teacherUpload,
+  schoolUpload
 };

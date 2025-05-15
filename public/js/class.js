@@ -181,20 +181,17 @@ $(document).ready(function () {
                     ).join('');
                 }
 
-                // Format the classes if they exist
-                let classesHtml = 'N/A';
-                if (response.classes && response.classes.length > 0) {
-                    classesHtml = response.classes.map(cls =>
-                        `<span class="badge bg-info text-dark me-1">${cls.class_name || 'N/A'}</span>`
-                    ).join('');
-                }
-
-                // Format the sections if they exist
-                let sectionsHtml = 'N/A';
-                if (response.sections && response.sections.length > 0) {
-                    sectionsHtml = response.sections.map(sec =>
-                        `<span class="badge bg-secondary me-1">${sec.section_name || 'N/A'}</span>`
-                    ).join('');
+                // Format classSections with alternate display of class and their sections
+                let classSectionsHtml = 'N/A';
+                if (response.classSections && response.classSections.length > 0) {
+                    classSectionsHtml = response.classSections.map(cls => `
+                <div class="mb-2">
+                    <strong class="text-info">${cls.class_name}:</strong>
+                    ${cls.sections.map(sec => `
+                        <span class="badge bg-secondary me-1">${sec}</span>
+                    `).join('')}
+                </div>
+            `).join('');
                 }
 
                 // Format dates if they exist
@@ -203,94 +200,68 @@ $(document).ready(function () {
 
                 $('#subjectModalTitle').text(response.name || 'Subject Details');
                 $('#subjectModalBody').html(`
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="card mb-3">
-                                <div class="card-header bg-primary text-white">
-                                    <h5 class="mb-0">Basic Information</h5>
-                                </div>
-                                <div class="card-body">
-                                    <table class="table table-sm table-borderless">
-                                        <tr>
-                                            <th width="40%">ID:</th>
-                                            <td>${response.id || 'N/A'}</td>
-                                        </tr>
-                                        <tr>
-                                            <th>Name:</th>
-                                            <td>${response.name || 'N/A'}</td>
-                                        </tr>
-                                        <tr>
-                                            <th>Subject Codes:</th>
-                                            <td>${subjectCodesHtml}</td>
-                                        </tr>
-                                        <tr>
-                                            <th>Pass Marks:</th>
-                                            <td>${response.passmarks || 'N/A'}</td>
-                                        </tr>
-                                        <tr>
-                                            <th>Full Marks:</th>
-                                            <td>${response.fullmarks || 'N/A'}</td>
-                                        </tr>
-                                        <tr>
-                                            <th>Credit Hour:</th>
-                                            <td>${response.creditHour || 'N/A'}</td>
-                                        </tr>
-                                    </table>
-                                </div>
-                            </div>
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="card mb-3">
+                        <div class="card-header bg-primary text-white">
+                            <h5 class="mb-0">Basic Information</h5>
                         </div>
-                        
-                        <div class="col-md-6">
-                            <div class="card mb-3">
-                                <div class="card-header bg-primary text-white">
-                                    <h5 class="mb-0">Class Information</h5>
-                                </div>
-                                <div class="card-body">
-                                    <table class="table table-sm table-borderless">
-                                        <tr>
-                                            <th width="40%">Classes:</th>
-                                            <td>${classesHtml}</td>
-                                        </tr>
-                                        <tr>
-                                            <th>Sections:</th>
-                                            <td>${sectionsHtml}</td>
-                                        </tr>
-                                    </table>
-                                </div>
-                            </div>
-                            
-                            <div class="card">
-                                <div class="card-header bg-primary text-white">
-                                    <h5 class="mb-0">Timestamps</h5>
-                                </div>
-                                <div class="card-body">
-                                    <table class="table table-sm table-borderless">
-                                        <tr>
-                                            <th width="40%">Created At:</th>
-                                            <td>${createdAt}</td>
-                                        </tr>
-                                        <tr>
-                                            <th>Updated At:</th>
-                                            <td>${updatedAt}</td>
-                                        </tr>
-                                    </table>
-                                </div>
-                            </div>
+                        <div class="card-body">
+                            <table class="table table-sm table-borderless">
+                                <tr>
+                                    <th width="40%">ID:</th>
+                                    <td>${response.id || 'N/A'}</td>
+                                </tr>
+                                <tr>
+                                    <th>Name:</th>
+                                    <td>${response.name || 'N/A'}</td>
+                                </tr>
+                                <tr>
+                                    <th>Subject Codes:</th>
+                                    <td>${subjectCodesHtml}</td>
+                                </tr>
+                                <tr>
+                                    <th>Pass Marks:</th>
+                                    <td>${response.passmarks || 'N/A'}</td>
+                                </tr>
+                                <tr>
+                                    <th>Full Marks:</th>
+                                    <td>${response.fullmarks || 'N/A'}</td>
+                                </tr>
+                                <tr>
+                                    <th>Credit Hour:</th>
+                                    <td>${response.creditHour || 'N/A'}</td>
+                                </tr>
+                            </table>
                         </div>
                     </div>
-                `);
+                </div>
+                
+                <div class="col-md-6">
+                    <div class="card mb-3">
+                        <div class="card-header bg-primary text-white">
+                            <h5 class="mb-0">Class & Section Information</h5>
+                        </div>
+                        <div class="card-body">
+                            ${classSectionsHtml}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `);
             },
             error: function (xhr) {
                 console.error('Error loading subject details:', xhr);
                 $('#subjectModalBody').html(`
-                    <div class="alert alert-danger">
-                        <i class="fas fa-exclamation-triangle me-2"></i>
-                        Failed to load subject details. Please try again.
-                        ${xhr.responseJSON?.error ? `<p class="mt-2">${xhr.responseJSON.error}</p>` : ''}
-                    </div>
-                `);
+            <div class="alert alert-danger">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                Failed to load subject details. Please try again.
+                ${xhr.responseJSON?.error ? `<p class="mt-2">${xhr.responseJSON.error}</p>` : ''}
+            </div>
+        `);
             }
         });
+
     });
 
     // Export to CSV functionality

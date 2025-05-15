@@ -2,15 +2,20 @@
 
 <div class="container-fluid mt-4">
   <div class="card">
-     <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-          <h3><i class="fa-solid fa-arrow-up-right-dots"></i>Students Promotion Management</h3>
-        
-            <a href="/students/student-form" class="btn btn-light">Back</a>
-       
-        </div>
+    <div
+      class="card-header bg-primary text-white d-flex justify-content-between align-items-center"
+    >
+      <h3>
+        <i class="fa-solid fa-arrow-up-right-dots"></i>Students Promotion
+        Management
+      </h3>
+
+      <a href="/students/student-form" class="btn btn-light">Back</a>
+    </div>
 
     <div class="card-body p-2 border">
-      <% if (success) { %>
+      <% if (success && typeof success === 'string' && success.trim() !== '') {
+      %>
       <div class="alert alert-success alert-dismissible fade show" role="alert">
         <%= success %>
         <button
@@ -44,7 +49,12 @@
                   <div class="col-md-6">
                     <div class="form-group">
                       <label>Academic Year:</label>
-                      <input type="text" class="form-control" value="<%= academicYear %>" readonly>
+                      <input
+                        type="text"
+                        class="form-control"
+                        value="<%= academicYear %>"
+                        readonly
+                      />
                     </div>
                   </div>
                   <div class="col-md-6">
@@ -89,7 +99,7 @@
                       <th>Total Students</th>
                       <th>Passed</th>
                       <th>Failed</th>
-                      
+
                       <th>Next Class</th>
                     </tr>
                   </thead>
@@ -108,7 +118,7 @@
                       >
                         <%= cls.failedStudents %>
                       </td>
-                 
+
                       <td>
                         <%= cls.nextClass ? cls.nextClass.class_name :
                         'Graduation' %>

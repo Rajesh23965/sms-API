@@ -199,22 +199,28 @@
             </div>             
 
             <div class="row mb-3 border p-3 m-0 bg-body-tertiary">
-              <div class="col-md-6">
-                <label class="form-label">Status</label>
-                <select class="form-select" name="status">
-                  <option value="active" <%= oldInput?.status === 'active' || student?.status === 'active' ? 'selected' : '' %>>Active</option>
-                  <option value="inactive" <%= oldInput?.status === 'inactive' || student?.status === 'active' ? 'selected' : '' %>>Inactive</option>
-                </select>
-              </div>
+           <div class="col-md-6">
+              <label class="form-label">Status</label>
+              <select class="form-select" name="status" required>
+                <option value="" disabled <%= !studentId ? 'selected' : '' %>>-- Select Status --</option>
+                <option value="active" 
+                  <%= (oldInput?.status === 'active' || (!oldInput?.status && student?.status === 'active')) ? 'selected' : '' %>
+                >Active</option>
+                <option value="inactive" 
+                  <%= (oldInput?.status === 'inactive' || (!oldInput?.status && student?.status === 'inactive')) ? 'selected' : '' %>
+                >Inactive</option>
+              </select>
+            </div>
               <div class="col-md-6">
                 <label class="form-label">Student Photo</label>
                 
                 <% if (student && student.image) { %>
                   <div class="mb-2">
                     <img src="/uploads/students/<%= student.image %>" 
-                         alt="Current Photo" 
-                         class="img-thumbnail" 
-                         style="max-width: 150px; max-height: 150px;">
+                        alt="Current Photo" 
+                        class="img-thumbnail" 
+                        style="max-width: 150px; max-height: 150px;"
+                        id="currentImage">
                     <div class="form-check mt-2">
                       <input class="form-check-input" type="checkbox" name="delete_image" id="deleteImage">
                       <label class="form-check-label text-danger" for="deleteImage">
@@ -224,11 +230,35 @@
                   </div>
                 <% } %>
                 
-                <input type="file" name="image" class="form-control <%= errorFields.includes('image') ? 'is-invalid' : '' %>" />
+                <!-- File input with preview container -->
+                <div class="mb-3">
+                  <input type="file" 
+                        name="image" 
+                        id="imageUpload"
+                        class="form-control <%= errorFields.includes('image') ? 'is-invalid' : '' %>"
+                        accept="image/jpeg, image/png, image/jpg">
+                  
+                  <!-- Preview container (initially hidden) -->
+                  <div id="imagePreviewContainer" class="mt-2" style="display: none;">
+                    <img id="imagePreview" 
+                        src="#" 
+                        alt="Preview of uploaded image" 
+                        class="img-thumbnail" 
+                        style="max-width: 150px; max-height: 150px;">
+                    <button type="button" 
+                            id="removePreview" 
+                            class="btn btn-sm btn-danger mt-2">
+                      Remove
+                    </button>
+                  </div>
+                </div>
+                
                 <% if (errorFields.includes('image')) { %>
                   <div class="invalid-feedback">Please upload a valid image (JPEG, JPG, PNG)</div>
                 <% } %>
               </div>
+
+
             </div>
           
             <!-- Promotion Section -->
