@@ -19,7 +19,21 @@ module.exports = (sequelize, DataTypes) => {
       fullmarks: {
         type: DataTypes.INTEGER,
         allowNull: true 
-      }
+      },
+      practicalMarks: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      validate: {
+        min: 0,
+      },
+    },
+     practicalPassmarks: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+        validate: {
+          min: 0,
+        },
+      },
     }, {
       indexes: [
         {

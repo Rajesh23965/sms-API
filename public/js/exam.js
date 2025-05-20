@@ -26,14 +26,14 @@ $(document).ready(function () {
     const admissionNumber = $(this).val();
     const examTypeId = $("input[name='examType']:checked").val();
     const academicYear = $("#academicYearSelect").val();
-  
+
     // Reset all fields
     $(".admissionNumber").val("");
     $(".studentName").html("");
     $(".studentClass").html("");
     $(".StudentSection").html("");
     $(".studentMakrsBox").html("");
-  
+
     if (admissionNumber.length > 4 && examTypeId) {
       $.ajax({
         method: "GET",
@@ -56,36 +56,56 @@ $(document).ready(function () {
             );
             $(".studentClass").html(response.class.class_name || "-");
             $(".StudentSection").html(response.section.section_name || "-");
-  
+
             // Create dynamic marks input boxes for each subject
             let studentMakrsBox = "";
             if (response.subjects && response.subjects.length > 0) {
+              const marksData = response.marks || {}; // marks object from response
+
               response.subjects.forEach(function (subject) {
-                const existingMarks = subject.marks !== null ? subject.marks : "";
-  
+                const existingTheoryMarks = subject.marks?.marks_obtained ?? "";
+                const existingPracticalMarks = subject.marks?.practical_marks ?? "";
+
                 studentMakrsBox += `
-                  <div class="mb-2 p-2 border bg-light">
-                    <label class="d-flex justify-content-between align-items-center">
-                      <span>${subject.name} (${subject.code}):</span>
-                      <div class="d-flex align-items-center gap-2">
-                        <input type="number" 
-                               name="${subject.code}_obtained" 
-                               class="marks-input form-control" 
-                               style="width: 80px"
-                               min="0" 
-                               max="${subject.fullmarks}"
-                               value="${existingMarks}">
-                        <span class="text-muted">/ ${subject.fullmarks}</span>
-                        ${existingMarks ? '<i class="fas fa-check text-success"></i>' : ''}
-                      </div>
-                    </label>
-                  </div>
-                `;
+    <div class="mb-2 p-2 border bg-light">
+      <label class="d-block fw-bold mb-1">${subject.name} (${subject.code}):</label>
+      
+      <div class="d-flex align-items-center gap-2 mb-2">
+        <span>Theory:</span>
+        <input type="number" 
+               name="${subject.code}_theory" 
+               class="marks-input form-control" 
+               style="width: 80px"
+               min="0" 
+               max="${subject.fullmarks}"
+               value="${existingTheoryMarks}">
+        <span class="text-muted">/ ${subject.fullmarks}</span>
+        ${existingTheoryMarks ? '<i class="fas fa-check text-success"></i>' : ''}
+      </div>
+
+      <div class="d-flex align-items-center gap-2">
+        <span>Practical:</span>
+        <input type="number" 
+               name="${subject.code}_practical" 
+               class="marks-input form-control" 
+               style="width: 80px"
+               min="0" 
+               max="${subject.practical_fullmarks || 25}" 
+               value="${existingPracticalMarks}">
+        <span class="text-muted">/ ${subject.practical_fullmarks || 25}</span>
+        ${existingPracticalMarks ? '<i class="fas fa-check text-success"></i>' : ''}
+      </div>
+    </div>
+  `;
               });
-            } else {
+
+            }
+
+
+            else {
               studentMakrsBox = "No subjects available for this class/section.";
             }
-  
+
             $(".studentMakrsBox").html(studentMakrsBox);
           } else {
             $(".studentMakrsBox").html("No student found.");
@@ -112,13 +132,13 @@ $(document).ready(function () {
   });
 
 
-// Refresh marks when academic year changes
-$(document).on("change", "#academicYearSelect", function () {
-  const admissionNumber = $("#admissionno").val();
-  if (admissionNumber && admissionNumber.length > 4) {
-    $("#admissionno").trigger("keyup");
-  }
-});
+  // Refresh marks when academic year changes
+  $(document).on("change", "#academicYearSelect", function () {
+    const admissionNumber = $("#admissionno").val();
+    if (admissionNumber && admissionNumber.length > 4) {
+      $("#admissionno").trigger("keyup");
+    }
+  });
 
 
   //Handle Bulk Marks Entry 
@@ -157,13 +177,14 @@ $(document).on("change", "#academicYearSelect", function () {
     const sectionId = $('#bulkSectionSelect').val();
     const examTypeId = $('#bulkExamTypeSelect').val();
 
-    if (!classId || !sectionId || !examTypeId) {
+    if (!classId || !examTypeId) {
       alert('Please select Class, Section, and Exam Type');
       return;
     }
 
     $('#loadingSpinner').removeClass('d-none');
     $('#bulkMarksTableContainer').addClass('d-none');
+    $('#noDataMessage').addClass('d-none').text('');
 
     loadBulkMarksData(classId, sectionId, examTypeId);
   });
@@ -180,17 +201,25 @@ $(document).on("change", "#academicYearSelect", function () {
       success: function (data) {
         $('#loadingSpinner').addClass('d-none');
 
-        if (data.students && data.subjects) {
-          renderBulkMarksTable(data.students, data.subjects);
-          $('#bulkMarksTableContainer').removeClass('d-none');
-        } else {
-          alert('No data found for the selected criteria');
-        }
-      },
-      error: function (xhr) {
-        $('#loadingSpinner').addClass('d-none');
-        alert('Error loading data: ' + (xhr.responseJSON?.error || 'Server error'));
+       
+      if (data.students && data.students.length > 0 && data.subjects && data.subjects.length > 0) {
+        $('#noDataMessage').addClass('d-none').text('');
+        renderBulkMarksTable(data.students, data.subjects);
+        $('#bulkMarksTableContainer').removeClass('d-none');
+      } else {
+        $('#bulkMarksTableContainer').addClass('d-none');
+        $('#noDataMessage')
+          .removeClass('d-none')
+          .text(data.message || 'No data found for the selected criteria.');
       }
+      },
+       error: function (xhr) {
+      $('#loadingSpinner').addClass('d-none');
+      $('#bulkMarksTableContainer').addClass('d-none');
+      $('#noDataMessage')
+        .removeClass('d-none')
+        .text(xhr.responseJSON?.error || 'Server error');
+    }
     });
   }
 
@@ -258,7 +287,7 @@ $(document).on("change", "#academicYearSelect", function () {
     const classId = $('#bulkClassSelect').val();
     const sectionId = $('#bulkSectionSelect').val();
     const academicYear = $('#bulkAcademicYearSelect').val() || data.academicYear; // Get from loaded data if not selected
-    
+
     // Validate inputs first
     let hasError = false;
     $('.bulk-mark-input').each(function () {
@@ -321,7 +350,7 @@ $(document).on("change", "#academicYearSelect", function () {
         exam_id: examTypeId,
         class_id: classId,
         section_id: sectionId,
-        academic_year: academicYear, 
+        academic_year: academicYear,
         marks_data: marksData
       }),
       success: function (response) {
@@ -358,15 +387,15 @@ $(document).on("change", "#academicYearSelect", function () {
 
 
 
-$(document).ready(function() {
+$(document).ready(function () {
   // Load sections when class is selected
-  $('#bulkClassSelect').change(function() {
+  $('#bulkClassSelect').change(function () {
     const classId = $(this).val();
     if (classId) {
       $.ajax({
         url: '/api/sections',
         data: { class_id: classId },
-        success: function(sections) {
+        success: function (sections) {
           const $sectionSelect = $('#bulkSectionSelect');
           $sectionSelect.empty().append('<option value="">Select Section</option>');
           sections.forEach(section => {
@@ -378,13 +407,13 @@ $(document).ready(function() {
   });
 
   // Load bulk marks data
-  $('#loadBulkDataBtn').click(function() {
+  $('#loadBulkDataBtn').click(function () {
     const classId = $('#bulkClassSelect').val();
     const sectionId = $('#bulkSectionSelect').val();
     const examId = $('#bulkExamTypeSelect').val();
     const academicYear = $('#bulkAcademicYearSelect').val();
 
-    if (!classId || !sectionId || !examId) {
+    if (!classId || !examId) {
       alert('Please select class, section and exam type');
       return;
     }
@@ -394,19 +423,19 @@ $(document).ready(function() {
 
     $.ajax({
       url: '/exams/api/bulk-marks-data',
-      data: { 
-        class_id: classId, 
-        section_id: sectionId, 
+      data: {
+        class_id: classId,
+        section_id: sectionId,
         exam_id: examId,
-        academic_year: academicYear 
+        academic_year: academicYear
       },
-      success: function(data) {
+      success: function (data) {
         renderBulkMarksTable(data);
       },
-      error: function(xhr) {
+      error: function (xhr) {
         alert(xhr.responseJSON?.error || 'Error loading data');
       },
-      complete: function() {
+      complete: function () {
         $('#loadingSpinner').addClass('d-none');
       }
     });
@@ -420,7 +449,7 @@ $(document).ready(function() {
     // Add subject columns to header
     const $headerRow = $('#bulkMarksTable thead tr');
     $headerRow.find('th:gt(2)').remove(); // Remove existing subject columns
-    
+
     data.subjects.forEach(subject => {
       $headerRow.append(`<th>${subject.name}<br><small>${subject.code} (${subject.fullmarks})</small></th>`);
     });
@@ -452,7 +481,7 @@ $(document).ready(function() {
                    placeholder="0-${subject.fullmarks}">
           </td>
         `);
-        
+
       });
 
       $tableBody.append($row);
@@ -462,7 +491,7 @@ $(document).ready(function() {
   }
 
   // Save bulk marks
-  $('#saveBulkMarksBtn').click(function() {
+  $('#saveBulkMarksBtn').click(function () {
     const examId = $('#bulkExamTypeSelect').val();
     const classId = $('#bulkClassSelect').val();
     const sectionId = $('#bulkSectionSelect').val();
@@ -474,15 +503,15 @@ $(document).ready(function() {
     }
 
     const marksData = [];
-    $('#bulkMarksTable tbody tr').each(function() {
+    $('#bulkMarksTable tbody tr').each(function () {
       const studentId = $(this).data('student-id');
       const studentMarks = {};
-    
-      $(this).find('.bulk-mark-input').each(function() {
+
+      $(this).find('.bulk-mark-input').each(function () {
         const subjectCode = $(this).data('subject-code');
         const subjectId = $(this).data('subject-id');  // Get subject ID
         const markValue = $(this).val();
-    
+
         if (markValue !== '') {
           studentMarks[subjectCode] = {
             marks: parseFloat(markValue),
@@ -490,7 +519,7 @@ $(document).ready(function() {
           };
         }
       });
-    
+
       if (Object.keys(studentMarks).length > 0) {
         marksData.push({
           student_id: studentId,
@@ -518,21 +547,21 @@ $(document).ready(function() {
         academic_year: academicYear,
         marks_data: marksData
       }),
-      success: function(response) {
+      success: function (response) {
         alert(response.message || 'Marks saved successfully');
         $('#bulkMarksModal').modal('hide');
       },
-      error: function(xhr) {
+      error: function (xhr) {
         alert(xhr.responseJSON?.error || 'Error saving marks');
       },
-      complete: function() {
+      complete: function () {
         $('#saveBulkMarksBtn').prop('disabled', false).html('<i class="fas fa-save me-2"></i>Save All Marks');
       }
     });
   });
 
   // Add academic year selector to modal (you'll need to add this HTML)
-  $('#bulkAcademicYearSelect').change(function() {
+  $('#bulkAcademicYearSelect').change(function () {
     // If academic year changes, reload the data
     if ($('#bulkMarksTableContainer').is(':visible')) {
       $('#loadBulkDataBtn').click();

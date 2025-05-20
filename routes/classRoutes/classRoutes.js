@@ -9,4 +9,6 @@ router.get("/count", classesController.getTotalClass);
 router.post("/get-sections", classesController.getSectionsByClasses);
 router.post("/get-subjects", classesController.getSubjectsByClassAndSections);
 router.get('/api/subject-details/:id', classesController.viewClassDetails);
+router.post("/api/subject-details/:subjectId",classesController.subjectDetails);
+
 module.exports = router;

@@ -14,7 +14,7 @@ const loadStudentForm = async (req, res) => {
     const provinces = await Province.findAll();
     const classes = await Class.findAll();
     const sections = await Section.findAll();
-    
+
     // Set default academic years (just current year)
     const currentYear = new Date().getFullYear();
     const defaultAcademicYear = `${currentYear}-${currentYear + 1}`;
@@ -31,7 +31,7 @@ const loadStudentForm = async (req, res) => {
 
     let student = null;
     let currentAcademicYear = defaultAcademicYear;
-    
+
     if (studentId) {
       student = await Student.findByPk(studentId, {
         include: [
@@ -59,13 +59,13 @@ const loadStudentForm = async (req, res) => {
       // Get academic year from database if exists
       if (student?.academicHistories?.[0]?.academic_year) {
         currentAcademicYear = student.academicHistories[0].academic_year;
-        
+
         // Add database year to academicYears if it's different
         if (!academicYears.includes(currentAcademicYear)) {
           academicYears.unshift(currentAcademicYear); // Add to beginning
         }
       }
-      
+
       // Format date for form input
       if (student && student.dob) {
         const dob = new Date(student.dob);
@@ -86,7 +86,14 @@ const loadStudentForm = async (req, res) => {
       student,
       academicYears,
       currentAcademicYear,
-      defaultAcademicYear
+      defaultAcademicYear,
+      title: "Student Management",
+      header: "Student Setup",
+      headerIcon: "fas fa-user-graduate",
+      buttons: [
+        { text: "Student List", href: "/students/student-list", color: "red",icon: "fas fa-users" },
+        { text: "Promotion", href: "/promotion", color: "green", icon: "fas fa-arrow-up-right-dots" }
+      ]
     });
   } catch (error) {
     console.error("Sequelize error:", error.message);
@@ -103,9 +110,9 @@ const addOrUpdateStudent = async (req, res) => {
     redirectURL = studentId
       ? `/students/student-form?studentId=${studentId}`
       : "/students/student-form";
-      const academicYear = studentData.current_academic_year || 
+    const academicYear = studentData.current_academic_year ||
       `${new Date().getFullYear()}-${new Date().getFullYear() + 1}`;
-  
+
     const requiredFields = [
       "first_name",
       "last_name",
@@ -145,8 +152,8 @@ const addOrUpdateStudent = async (req, res) => {
     }
 
     let student;
-  
- 
+
+
     if (studentId) {
       student = await Student.findByPk(studentId);
       if (!student) {
@@ -278,7 +285,7 @@ const loadStudentList = async (req, res) => {
     }
 
     const { count, rows: studentlist } = await Student.findAndCountAll({
-      where: whereClause,
+      where: { ...whereClause },
       limit,
       offset,
       order: [["createdAt", "DESC"]],
@@ -286,8 +293,8 @@ const loadStudentList = async (req, res) => {
         {
           model: StudentAcademicHistory,
           as: 'academicHistories',
-          where: { is_current: true },
-          required: false,
+          where: { is_current: 1 },
+          required: true,
           include: [
             {
               model: Class,
@@ -300,7 +307,7 @@ const loadStudentList = async (req, res) => {
               attributes: ['section_name']
             }
           ],
-          required: false 
+
         }
       ]
     });
@@ -338,6 +345,12 @@ const loadStudentList = async (req, res) => {
       },
       success,
       error,
+      title: "Student Management",
+      header: "Student Setup",
+      headerIcon: "fas fa-user-graduate",
+      buttons: [
+        { text: "Add Student", href: "/students/student-form", color: "red", icon: "fas fa-user-plus" },
+      ]
     });
 
   } catch (error) {
@@ -366,10 +379,19 @@ const deleteStudent = async (req, res) => {
       req.session.error = "Student record not found";
       return res.redirect("/students/student-list");
     }
-  // Delete academic history first
-  await StudentAcademicHistory.destroy({
-    where: { student_id: id }
-  });
+    // Delete image if exists
+    if (studentData.image) {
+      const imagePath = path.join(__dirname, '../../public/uploads/students', studentData.image);
+      if (fs.existsSync(imagePath)) {
+        fs.unlinkSync(imagePath); // Delete the image from the file system
+      }
+    }
+
+
+    // Delete academic history first
+    await StudentAcademicHistory.destroy({
+      where: { student_id: id }
+    });
     await studentData.destroy();
     req.session.success = "Student Record Deleted Successfully";
     return res.redirect("/students/student-list");

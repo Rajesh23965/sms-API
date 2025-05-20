@@ -39,6 +39,9 @@ db.subjectClass = require("./classModel/subjectClass")(sequelize, DataTypes);
 db.subjectTeacher = require("./classModel/subjectTeacher")(sequelize, DataTypes);
 db.student_academic_histories = require("./examManage/studentAcademicYear.js")(sequelize, DataTypes);
 db.terms = require("./examManage/terms.js")(sequelize, DataTypes);
+db.schoolinfo=require("./SchoolInfo/schoolModel.js")(sequelize,DataTypes);
+
+
 // Setup associations
 require("./associations.js")(db);
 

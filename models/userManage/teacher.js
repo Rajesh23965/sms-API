@@ -22,6 +22,13 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.TEXT,
         allowNull: true,
       },
+      school_id: {
+      type: DataTypes.INTEGER,
+      references: {
+        model: 'schoolinfo',
+        key: 'id'
+      }
+    },
       joining_date: DataTypes.DATE,
       status: DataTypes.STRING(10),
     },

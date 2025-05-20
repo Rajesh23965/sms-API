@@ -243,4 +243,30 @@ db.exams.belongsTo(db.terms, {
   as: 'term'
 });
 
+
+
+//School and teache and student relation
+
+// Add these associations at the end of your db setup
+// School Relationships
+db.schoolinfo.hasMany(db.students, {
+  foreignKey: 'school_id',
+  as: 'students'
+});
+
+db.students.belongsTo(db.schoolinfo, {
+  foreignKey: 'school_id',
+  as: 'school'
+});
+
+db.schoolinfo.hasMany(db.teachers, {
+  foreignKey: 'school_id',
+  as: 'teachers'
+});
+
+db.teachers.belongsTo(db.schoolinfo, {
+  foreignKey: 'school_id',
+  as: 'school'
+});
+
 };

@@ -3,7 +3,7 @@ document.addEventListener('DOMContentLoaded', function () {
   const sectionContainer = document.getElementById('sectionContainer');
   const subjectContainer = document.getElementById('subjectContainer');
   const isEditMode = window.location.search.includes('teacherId');
-  
+
   // Get pre-selected values from hidden inputs or data attributes
   const oldClassIds = JSON.parse(document.getElementById('oldClassIds')?.value || '[]');
   const oldSectionIds = JSON.parse(document.getElementById('oldSectionIds')?.value || '[]');
@@ -64,33 +64,45 @@ document.addEventListener('DOMContentLoaded', function () {
         let colorIndex = 0;
         let currentClassId = null;
 
-        sections.forEach((section, index) => {
+        // Group sections by class_id
+        const sectionMap = new Map();
+        sections.forEach(section => {
+          if (!sectionMap.has(section.class_id)) {
+            sectionMap.set(section.class_id, []);
+          }
+          sectionMap.get(section.class_id).push(section);
+        });
+
+        // Generate HTML
+        sectionMap.forEach((sectionList, classId) => {
+          const classObj = selectedClasses.find(cls => cls.id == classId);
+          const className = classObj ? classObj.name : 'Unknown Class';
           const bgColorClass = classColors[colorIndex % classColors.length];
 
-          if (currentClassId !== section.class_id) {
-            const classObj = selectedClasses.find(cls => cls.id == section.class_id);
-            const className = classObj ? classObj.name : 'Unknown Class';
+          html += `<h6 class="p-2 rounded-2 text-white ${bgColorClass}">${className}</h6>`;
+          html += `<div class="flex flex-wrap gap-3 mb-4 border p-3 rounded shadow-sm text-xl bg-white">`;
 
-            html += `<h6 class="p-2 text-white ${bgColorClass}">${className}</h6>`;
-            currentClassId = section.class_id;
-          }
+          sectionList.forEach(section => {
+            const isChecked = oldSectionIds.includes(section.id.toString());
+            html += `
+      <div class="form-check min-w-[20px] ">
+        <label class="form-check-label cursor-pointer flex items-center space-x-2">
+          <input type="checkbox" 
+                 class="form-check-input section-checkbox" 
+                 name="section_id[]" 
+                 value="${section.id}"
+                 ${isChecked ? 'checked' : ''}>
+          <span>${section.section_name}</span>
+        </label>
+      </div>
+    `;
+          });
 
-          const isChecked = oldSectionIds.includes(section.id.toString());
-          
-          html += `
-            <div class="form-check p-2 rounded mb-2">
-              <label class="form-check-label cursor-pointer">
-                <input type="checkbox" 
-                       class="form-check-input section-checkbox" 
-                       name="section_id[]" 
-                       value="${section.id}"
-                       ${isChecked ? 'checked' : ''}>
-                ${section.section_name}
-              </label>
-            </div>
-          `;
+          html += `</div>`; // Close horizontal container
           colorIndex++;
         });
+
+
 
         sectionContainer.innerHTML = html;
 
@@ -138,9 +150,9 @@ document.addEventListener('DOMContentLoaded', function () {
       const response = await fetch('/teachers/get-subjects', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          classIds: selectedClassIds, 
-          sectionIds: selectedSectionIds 
+        body: JSON.stringify({
+          classIds: selectedClassIds,
+          sectionIds: selectedSectionIds
         }),
       });
 
@@ -175,4 +187,84 @@ document.addEventListener('DOMContentLoaded', function () {
 
   // Initial load
   updateSectionsAndSubjects();
+});
+
+
+
+document.addEventListener('DOMContentLoaded', function () {
+  const imageUpload = document.getElementById('teacherImageUpload');
+  const imagePreview = document.getElementById('imagePreview');
+  const imagePreviewContainer = document.getElementById('imagePreviewContainer');
+  const removePreviewBtn = document.getElementById('removePreviewBtn');
+  const currentTeacherImage = document.getElementById('currentTeacherImage');
+  const removeImageCheckbox = document.getElementById('removeImage');
+
+  // Handle file selection
+  if (imageUpload) {
+    imageUpload.addEventListener('change', function (e) {
+      if (this.files && this.files[0]) {
+        const file = this.files[0];
+
+        // Validate file type
+        const validTypes = ['image/jpeg', 'image/png', 'image/jpg'];
+        if (!validTypes.includes(file.type)) {
+          alert('Please select a valid image file (JPEG, JPG, or PNG)');
+          this.value = '';
+          return;
+        }
+
+        // Validate file size (2MB max)
+        if (file.size > 2 * 1024 * 1024) {
+          alert('Image size should be less than 2MB');
+          this.value = '';
+          return;
+        }
+
+        const reader = new FileReader();
+
+        reader.onload = function (e) {
+          imagePreview.src = e.target.result;
+          imagePreviewContainer.style.display = 'block';
+
+          // Hide current image if exists
+          if (currentTeacherImage) {
+            currentTeacherImage.style.display = 'none';
+          }
+
+          // Uncheck remove checkbox if checked
+          if (removeImageCheckbox) {
+            removeImageCheckbox.checked = false;
+          }
+        }
+
+        reader.readAsDataURL(file);
+      }
+    });
+  }
+
+  // Handle remove preview button
+  if (removePreviewBtn) {
+    removePreviewBtn.addEventListener('click', function () {
+      imageUpload.value = '';
+      imagePreviewContainer.style.display = 'none';
+
+      // Show current image again if exists
+      if (currentTeacherImage) {
+        currentTeacherImage.style.display = 'block';
+      }
+    });
+  }
+
+  // Handle remove image checkbox
+  if (removeImageCheckbox) {
+    removeImageCheckbox.addEventListener('change', function () {
+      if (this.checked) {
+        // Hide preview if showing
+        imagePreviewContainer.style.display = 'none';
+        if (imageUpload) {
+          imageUpload.value = '';
+        }
+      }
+    });
+  }
 });

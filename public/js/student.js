@@ -155,3 +155,76 @@ function changeLimit(select) {
   url.searchParams.set('page', 1);
   window.location.href = url.toString();
 }
+
+
+document.addEventListener('DOMContentLoaded', function() {
+  const imageUpload = document.getElementById('imageUpload');
+  const imagePreview = document.getElementById('imagePreview');
+  const imagePreviewContainer = document.getElementById('imagePreviewContainer');
+  const removePreviewBtn = document.getElementById('removePreview');
+  const currentImage = document.getElementById('currentImage');
+  const deleteImageCheckbox = document.getElementById('deleteImage');
+
+  // Handle file selection
+  imageUpload.addEventListener('change', function(e) {
+    if (this.files && this.files[0]) {
+      const file = this.files[0];
+      
+      // Validate file type
+      const validTypes = ['image/jpeg', 'image/png', 'image/jpg'];
+      if (!validTypes.includes(file.type)) {
+        alert('Please select a valid image file (JPEG, JPG, or PNG)');
+        this.value = ''; // Clear the input
+        return;
+      }
+      
+      // Validate file size (e.g., 2MB max)
+      if (file.size > 2 * 1024 * 1024) {
+        alert('Image size should be less than 2MB');
+        this.value = ''; // Clear the input
+        return;
+      }
+      
+      const reader = new FileReader();
+      
+      reader.onload = function(e) {
+        imagePreview.src = e.target.result;
+        imagePreviewContainer.style.display = 'block';
+        
+        // Hide current image if exists
+        if (currentImage) {
+          currentImage.style.display = 'none';
+        }
+        
+        // Uncheck delete checkbox if checked
+        if (deleteImageCheckbox) {
+          deleteImageCheckbox.checked = false;
+        }
+      }
+      
+      reader.readAsDataURL(file);
+    }
+  });
+  
+  // Handle remove preview button
+  removePreviewBtn.addEventListener('click', function() {
+    imageUpload.value = ''; // Clear the file input
+    imagePreviewContainer.style.display = 'none';
+    
+    // Show current image again if exists
+    if (currentImage) {
+      currentImage.style.display = 'block';
+    }
+  });
+  
+  // Handle delete image checkbox
+  if (deleteImageCheckbox) {
+    deleteImageCheckbox.addEventListener('change', function() {
+      if (this.checked) {
+        // Hide preview if showing
+        imagePreviewContainer.style.display = 'none';
+        imageUpload.value = '';
+      }
+    });
+  }
+});

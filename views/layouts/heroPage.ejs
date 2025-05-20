@@ -1,0 +1,31 @@
+<div class="container-fluid px-3 space-y-4">
+  <!-- Top Card Header -->
+  <div
+    class="flex justify-between items-center bg-[#2a2a40] text-white rounded-md px-4 py-2 shadow"
+  >
+    <div class="flex gap-4">
+      <% if (typeof buttons !== "undefined" && Array.isArray(buttons)) { %> <%
+      buttons.forEach(button => { %>
+      <a
+        href="<%= button.href %>"
+        class="bg-<%= button.color %>-600 hover:bg-<%= button.color %>-700 text-white px-4 py-2 shadow flex items-center gap-2"
+      >
+        <% if (button.icon) { %>
+        <i class="<%= button.icon %>"></i>
+        <% } %>
+        <span><%= button.text %></span>
+      </a>
+      <% }); %> <% } %>
+    </div>
+    <h3 class="text-xl font-semibold"><%= title || '' %></h3>
+  </div>
+
+  <div
+    class="bg-green-600 text-white px-4 py-3 rounded shadow flex items-center gap-2"
+  >
+    <% if (typeof headerIcon !== "undefined") { %>
+    <i class="<%= headerIcon %>"></i>
+    <% } %>
+    <h3 class="text-xl font-semibold"><%= header || '' %></h3>
+  </div>
+</div>

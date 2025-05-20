@@ -4,8 +4,6 @@ const db=require("../../models");
 const studentController = require("../../controllers/studentController/student");
 const { studentUpload }=require("../../middleware/upload.js");
 
-
-const path = require("path");
 const District = db.district;
 const Vdc = db.vdc;
 const Section = db.sections;
@@ -50,7 +48,6 @@ router.get("/get-sections/:classId", async (req, res) => {
     const sections = await Section.findAll({
       where: { class_id: req.params.classId },
     });
-    console.log(sections);
     res.json(sections);
   } catch (error) {
     console.error("Error fetching sections:", error);

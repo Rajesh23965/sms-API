@@ -4,16 +4,8 @@
   <div class="row justify-content-center">
     <div class="col-lg-12">
       <div class="card shadow-lg rounded-0">
-        <div
-          class="card-header bg-gradient text-capitalize d-flex flex-row justify-content-between align-items-center"
-        >
-          <a
-            class="btn btn-success rounded-1 shadow"
-            href="/teachers/teacher-form"
-            >Add teacher</a
-          >
-          <h3><i class="fas fa-user-graduate me-2"></i>Teachers List</h3>
-        </div>
+        <%-include('../layouts/heroPage.ejs')%>
+
         <div class="card-body p-4">
           <% if (success) { %>
           <div
@@ -42,17 +34,17 @@
             ></button>
           </div>
           <% } %>
-          <div class="flex justify-content-between mb-3 items-center gap-2 md:mt-0 px-2">
+          <div class="flex justify-content-between mb-3 items-center gap-2 md:mt-0 ">
             <div class="grid grid-cols-1">
               <form method="GET" action="/teachers/teacher-list" class="flex items-center gap-2">
                 <input 
                   type="search" 
                   name="search" 
-                  class="border-2 border-gray-600 rounded-lg p-2" 
+                  class="border-2 border-green-600 rounded-lg p-2" 
                   placeholder="Search by name"
                   value="<%= searchQuery || '' %>"
                 >
-                <button type="submit" class="btn btn-primary">Search</button>
+                <button type="submit" class="btn bg-green-600 hover:bg-green-700">Search</button>
                 <% if (searchQuery) { %>
                   <a href="/teachers/teacher-list" class="btn btn-secondary">Clear</a>
                 <% } %>

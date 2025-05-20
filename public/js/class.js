@@ -62,12 +62,12 @@ $(document).ready(function () {
         const selectedSections = $('#sectionSelect').select2('data');
 
         if (selectedClasses.length > 0) {
-            activeFilters.append('<span class="badge bg-primary">Classes: ' +
+            activeFilters.append('<span class="badge bg-green-600">Classes: ' +
                 selectedClasses.map(c => c.text).join(', ') + '</span>');
         }
 
         if (selectedSections.length > 0 && selectedSections[0].id) {
-            activeFilters.append('<span class="badge bg-info text-dark">Sections: ' +
+            activeFilters.append('<span class="badge bg-green-600 text-dark">Sections: ' +
                 selectedSections.map(s => s.text).join(', ') + '</span>');
         }
     }
@@ -114,7 +114,7 @@ $(document).ready(function () {
                     <td>${classNames.join(', ')}</td>
                     <td>${sectionNames.join(', ')}</td>
                     <td>
-                        <button class="btn btn-sm btn-outline-primary view-details" data-id="${subject.id}" data-bs-toggle="tooltip" title="View details">
+                        <button class="btn btn-sm bg-green-600 view-details" data-id="${subject.id}" data-bs-toggle="tooltip" title="View details">
                             <i class="fas fa-eye"></i>
                         </button>
                     </td>
@@ -143,8 +143,8 @@ $(document).ready(function () {
                     $('#loadingState').hide();
                     $('#subjectsTableBody').hide();
                     $('#emptyState').html(`
-            <i class="fas fa-exclamation-triangle fa-4x mb-3 text-danger"></i>
-            <h4 class="text-danger">Error loading subjects</h4>
+            <i class="fas fa-exclamation-triangle fa-4x mb-3 text-green-600"></i>
+            <h4 class="text-green-600">Error loading subjects</h4>
             <p class="text-center text-muted">${xhr.responseJSON?.error || 'Please try again'}</p>
           `).show();
                     $('#resultCount').text('Error loading results');
@@ -160,7 +160,7 @@ $(document).ready(function () {
         $('#subjectModalTitle').text('Loading subject details...');
         $('#subjectModalBody').html(`
             <div class="text-center py-4">
-              <div class="spinner-border text-primary" role="status">
+              <div class="spinner-border text-green-600" role="status">
                 <span class="visually-hidden">Loading...</span>
               </div>
               <p class="mt-2">Loading details for subject ID: ${subjectId}</p>
@@ -177,120 +177,88 @@ $(document).ready(function () {
                 let subjectCodesHtml = 'N/A';
                 if (response.subjectCodes && response.subjectCodes.length > 0) {
                     subjectCodesHtml = response.subjectCodes.map(code =>
-                        `<span class="badge bg-primary me-1">${code.code || 'N/A'}</span>`
+                        `<span class="badge bg-green-600 me-1">${code.code || 'N/A'}</span>`
                     ).join('');
                 }
 
-                // Format the classes if they exist
-                let classesHtml = 'N/A';
-                if (response.classes && response.classes.length > 0) {
-                    classesHtml = response.classes.map(cls =>
-                        `<span class="badge bg-info text-dark me-1">${cls.class_name || 'N/A'}</span>`
-                    ).join('');
+                // Format classSections with alternate display of class and their sections
+                let classSectionsHtml = 'N/A';
+                if (response.classSections && response.classSections.length > 0) {
+                    classSectionsHtml = response.classSections.map(cls => `
+                <div class="mb-2">
+                    <strong class="text-gree">${cls.class_name}:</strong>
+                    ${cls.sections.map(sec => `
+                        <span class="badge bg-green-600 me-1">${sec}</span>
+                    `).join('')}
+                </div>
+            `).join('');
                 }
 
-                // Format the sections if they exist
-                let sectionsHtml = 'N/A';
-                if (response.sections && response.sections.length > 0) {
-                    sectionsHtml = response.sections.map(sec =>
-                        `<span class="badge bg-secondary me-1">${sec.section_name || 'N/A'}</span>`
-                    ).join('');
-                }
-
-                // Format dates if they exist
-                const createdAt = response.createdAt ? new Date(response.createdAt).toLocaleString() : 'N/A';
-                const updatedAt = response.updatedAt ? new Date(response.updatedAt).toLocaleString() : 'N/A';
 
                 $('#subjectModalTitle').text(response.name || 'Subject Details');
                 $('#subjectModalBody').html(`
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="card mb-3">
-                                <div class="card-header bg-primary text-white">
-                                    <h5 class="mb-0">Basic Information</h5>
-                                </div>
-                                <div class="card-body">
-                                    <table class="table table-sm table-borderless">
-                                        <tr>
-                                            <th width="40%">ID:</th>
-                                            <td>${response.id || 'N/A'}</td>
-                                        </tr>
-                                        <tr>
-                                            <th>Name:</th>
-                                            <td>${response.name || 'N/A'}</td>
-                                        </tr>
-                                        <tr>
-                                            <th>Subject Codes:</th>
-                                            <td>${subjectCodesHtml}</td>
-                                        </tr>
-                                        <tr>
-                                            <th>Pass Marks:</th>
-                                            <td>${response.passmarks || 'N/A'}</td>
-                                        </tr>
-                                        <tr>
-                                            <th>Full Marks:</th>
-                                            <td>${response.fullmarks || 'N/A'}</td>
-                                        </tr>
-                                        <tr>
-                                            <th>Credit Hour:</th>
-                                            <td>${response.creditHour || 'N/A'}</td>
-                                        </tr>
-                                    </table>
-                                </div>
-                            </div>
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="card mb-3">
+                        <div class="card-header bg-green-600 text-white">
+                            <h5 class="mb-0">Basic Information</h5>
                         </div>
-                        
-                        <div class="col-md-6">
-                            <div class="card mb-3">
-                                <div class="card-header bg-primary text-white">
-                                    <h5 class="mb-0">Class Information</h5>
-                                </div>
-                                <div class="card-body">
-                                    <table class="table table-sm table-borderless">
-                                        <tr>
-                                            <th width="40%">Classes:</th>
-                                            <td>${classesHtml}</td>
-                                        </tr>
-                                        <tr>
-                                            <th>Sections:</th>
-                                            <td>${sectionsHtml}</td>
-                                        </tr>
-                                    </table>
-                                </div>
-                            </div>
-                            
-                            <div class="card">
-                                <div class="card-header bg-primary text-white">
-                                    <h5 class="mb-0">Timestamps</h5>
-                                </div>
-                                <div class="card-body">
-                                    <table class="table table-sm table-borderless">
-                                        <tr>
-                                            <th width="40%">Created At:</th>
-                                            <td>${createdAt}</td>
-                                        </tr>
-                                        <tr>
-                                            <th>Updated At:</th>
-                                            <td>${updatedAt}</td>
-                                        </tr>
-                                    </table>
-                                </div>
-                            </div>
+                        <div class="card-body">
+                            <table class="table table-sm table-borderless">
+                                <tr>
+                                    <th width="40%">ID:</th>
+                                    <td>${response.id || 'N/A'}</td>
+                                </tr>
+                                <tr>
+                                    <th>Name:</th>
+                                    <td>${response.name || 'N/A'}</td>
+                                </tr>
+                                <tr>
+                                    <th>Subject Codes:</th>
+                                    <td>${subjectCodesHtml}</td>
+                                </tr>
+                                <tr>
+                                    <th>Pass Marks:</th>
+                                    <td>${response.passmarks || 'N/A'}</td>
+                                </tr>
+                                <tr>
+                                    <th>Full Marks:</th>
+                                    <td>${response.fullmarks || 'N/A'}</td>
+                                </tr>
+                                <tr>
+                                    <th>Credit Hour:</th>
+                                    <td>${response.creditHour || 'N/A'}</td>
+                                </tr>
+                            </table>
                         </div>
                     </div>
-                `);
+                </div>
+                
+                <div class="col-md-6">
+                    <div class="card mb-3">
+                        <div class="card-header bg-green-600 text-white">
+                            <h5 class="mb-0">Class & Section Information</h5>
+                        </div>
+                        <div class="card-body">
+                            ${classSectionsHtml}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `);
             },
             error: function (xhr) {
                 console.error('Error loading subject details:', xhr);
                 $('#subjectModalBody').html(`
-                    <div class="alert alert-danger">
-                        <i class="fas fa-exclamation-triangle me-2"></i>
-                        Failed to load subject details. Please try again.
-                        ${xhr.responseJSON?.error ? `<p class="mt-2">${xhr.responseJSON.error}</p>` : ''}
-                    </div>
-                `);
+            <div class="alert alert-danger">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                Failed to load subject details. Please try again.
+                ${xhr.responseJSON?.error ? `<p class="mt-2">${xhr.responseJSON.error}</p>` : ''}
+            </div>
+        `);
             }
         });
+
     });
 
     // Export to CSV functionality
