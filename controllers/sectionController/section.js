@@ -9,7 +9,8 @@ const loadsectionform = async (req, res) => {
   const errorFields = req.flash("errorFields")[0] || [];
 
   const classIdforSection = req.query.classID;
-
+  const sectionId = req.query.sectionID;
+  const isEditMode = !sectionId
   let sectionsById = null;
 
   try {
@@ -45,6 +46,17 @@ const loadsectionform = async (req, res) => {
       errorFields,
       listclass,
       sectionsById,
+      title: "Section Management",
+      header: "Section Setup",
+      headerIcon: "fas fa-layer-group",
+      buttons: [
+        {
+          text: "Add Section",
+          href: "/sections/section-form",
+          color: "green",
+          icon: "fas fa-plus"
+        }
+      ]
     });
   } catch (error) {
     console.error("Error fetching classes with sections:", error);

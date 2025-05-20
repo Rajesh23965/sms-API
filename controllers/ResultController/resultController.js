@@ -49,7 +49,14 @@ const loadResult = async (req, res) => {
       error,
       success,
       academicYears,
-      schoolInfo
+      schoolInfo,
+      title: "Result Management",
+      header: "Result Setup",
+      headerIcon: "fa-solid fa-square-poll-vertical",
+      buttons: [
+        { text: "Refresh", href: "/results/results", color: "red", icon: "fa-solid fa-rotate" },
+      
+      ]
     });
   } catch (error) {
     console.error("Error loading result page:", error);
@@ -79,7 +86,7 @@ const searchStudentResult = async (req, res) => {
         {
           model: db.students,
           as: 'student',
-          attributes: ["id", "first_name", "middle_name", "last_name", "image"],
+          attributes: ["id", "first_name", "middle_name", "last_name", "image", "fname", "dob"],
           where: { status: 'active' },
           required: true,
           include: [{
@@ -127,7 +134,7 @@ const searchStudentResult = async (req, res) => {
           {
             model: db.subjects,
             as: 'subject',
-            attributes: ['id', 'name', "fullmarks", "passmarks"]
+            attributes: ['id', 'name', "fullmarks", "passmarks", "practicalMarks"]
           }
         ]
       }],
@@ -154,19 +161,25 @@ const searchStudentResult = async (req, res) => {
     const subjects = examResults.map(result => {
       // Use marks_obtained instead of marks
       const marks = result.marks_obtained;
+      const practicalMar = result.practical_marks;
+      const totalMarksObtained = marks + practicalMar;
       const subjectClass = result.subjectCodeRef?.subject;
       const fullmarks = subjectClass?.fullmarks || 100;
-      const passmarks = subjectClass?.passmarks || 40;
-      const percentage = (marks / fullmarks) * 100;
+      const passmarks = subjectClass?.passmarks || 35;
+      const practicalMarks = subjectClass?.practicalMarks
+      const percentage = (totalMarksObtained / fullmarks) * 100;
       const { grade, point } = calculateGrade(percentage);
-      const status = percentage >= passmarks ? "Pass" : "Fail";
 
+      const status = totalMarksObtained >= passmarks ? "Pass" : "Fail";
       return {
         name: subjectClass?.name || 'Unknown Subject',
         code: result.subject_code,
         marks: marks,
+        practicalMar: practicalMar,
+        totalMarks: totalMarksObtained,
         fullMarks: fullmarks,
         passMarks: passmarks,
+        practicalMarks: practicalMarks,
         percentage: percentage.toFixed(2),
         grade,
         gradePoint: point,
@@ -174,14 +187,14 @@ const searchStudentResult = async (req, res) => {
       };
     });
 
-    const totalMarks = subjects.reduce((sum, subj) => sum + subj.marks, 0);
+    const totalMarks = subjects.reduce((sum, subj) => sum + subj.totalMarks, 0);
     const totalFullMarks = subjects.reduce((sum, subj) => sum + subj.fullMarks, 0);
     const overallPercentage = (totalMarks / totalFullMarks * 100).toFixed(2);
     const cgpa = calculateCGPA(subjects);
     const overallStatus = subjects.every(subj => subj.status === "Pass") ? "Pass" : "Fail";
 
     // Get exam details
-       const exam = await db.exams.findOne({
+    const exam = await db.exams.findOne({
       where: { id: examTypeId },
       include: [{
         model: db.terms,
@@ -203,7 +216,10 @@ const searchStudentResult = async (req, res) => {
         name: `${academicHistory.student.first_name} ${academicHistory.student.middle_name || ''} ${academicHistory.student.last_name || ''}`.trim(),
         class: academicHistory.class.class_name,
         section: academicHistory.section.section_name,
-        image: academicHistory.student.image
+        image: academicHistory.student.image,
+        fname: academicHistory.student.fname,
+        dob: academicHistory.student.dob,
+        academicYear,
       },
       exam: {
         id: exam.id,
@@ -222,7 +238,6 @@ const searchStudentResult = async (req, res) => {
         overallStatus
       }
     };
-console.log(response)
 
     res.json(response);
   } catch (error) {

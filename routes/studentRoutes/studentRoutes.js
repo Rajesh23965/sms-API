@@ -4,8 +4,6 @@ const db=require("../../models");
 const studentController = require("../../controllers/studentController/student");
 const { studentUpload }=require("../../middleware/upload.js");
 
-
-const path = require("path");
 const District = db.district;
 const Vdc = db.vdc;
 const Section = db.sections;

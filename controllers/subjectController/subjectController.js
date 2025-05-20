@@ -135,7 +135,18 @@ const loadSubjectForm = async (req, res) => {
                 paginationStart,
                 paginationEnd,
                 limit
-            }
+            },
+            title: "Subject Management",
+            header: "Subject Setup",
+            headerIcon: "fas fa-layer-group",
+            buttons: [
+                {
+                    text: "Add Subject",
+                    href: "/subjects/subject-form",
+                    color: "green",
+                    icon: "fas fa-plus"
+                }
+            ]
         });
     } catch (err) {
         console.error('Error in loadSubjectForm:', err);
@@ -146,7 +157,7 @@ const loadSubjectForm = async (req, res) => {
 
 const addOrUpdateSubject = async (req, res) => {
     try {
-        const { name, passmarks, practicalPassmarks,practicalMarks, fullmarks, creditHour, section_mapping } = req.body;
+        const { name, passmarks, practicalPassmarks, practicalMarks, fullmarks, creditHour, section_mapping } = req.body;
         const subjectId = req.query.subjectId;
         const redirectURL = "/subjects/subject-form";
 
@@ -196,7 +207,7 @@ const addOrUpdateSubject = async (req, res) => {
             subject.passmarks = passmarks;
             subject.fullmarks = fullmarks;
             subject.practicalMarks = practicalMarks;
-            subject.practicalPassmarks=practicalPassmarks;
+            subject.practicalPassmarks = practicalPassmarks;
             subject.creditHour = creditHour;
             await subject.save();
 
@@ -237,7 +248,7 @@ const addOrUpdateSubject = async (req, res) => {
                 section_id: cs.section_id,
                 passmarks: cs.passmarks,
                 practicalMarks: cs.practicalMarks,
-                practicalPassmarks:cs.practicalPassmarks,
+                practicalPassmarks: cs.practicalPassmarks,
                 fullmarks: cs.fullmarks,
                 creditHour: cs.creditHour
             });

@@ -86,7 +86,14 @@ const loadStudentForm = async (req, res) => {
       student,
       academicYears,
       currentAcademicYear,
-      defaultAcademicYear
+      defaultAcademicYear,
+      title: "Student Management",
+      header: "Student Setup",
+      headerIcon: "fas fa-user-graduate",
+      buttons: [
+        { text: "Student List", href: "/students/student-list", color: "red",icon: "fas fa-users" },
+        { text: "Promotion", href: "/promotion", color: "green", icon: "fas fa-arrow-up-right-dots" }
+      ]
     });
   } catch (error) {
     console.error("Sequelize error:", error.message);
@@ -338,6 +345,12 @@ const loadStudentList = async (req, res) => {
       },
       success,
       error,
+      title: "Student Management",
+      header: "Student Setup",
+      headerIcon: "fas fa-user-graduate",
+      buttons: [
+        { text: "Add Student", href: "/students/student-form", color: "red", icon: "fas fa-user-plus" },
+      ]
     });
 
   } catch (error) {

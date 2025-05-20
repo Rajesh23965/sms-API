@@ -59,14 +59,14 @@ $(document).ready(function () {
 
             // Create dynamic marks input boxes for each subject
             let studentMakrsBox = "";
-        if (response.subjects && response.subjects.length > 0) {
-  const marksData = response.marks || {}; // marks object from response
+            if (response.subjects && response.subjects.length > 0) {
+              const marksData = response.marks || {}; // marks object from response
 
-response.subjects.forEach(function (subject) {
-  const existingTheoryMarks = subject.marks?.marks_obtained ?? "";
-  const existingPracticalMarks = subject.marks?.practical_marks ?? "";
+              response.subjects.forEach(function (subject) {
+                const existingTheoryMarks = subject.marks?.marks_obtained ?? "";
+                const existingPracticalMarks = subject.marks?.practical_marks ?? "";
 
-  studentMakrsBox += `
+                studentMakrsBox += `
     <div class="mb-2 p-2 border bg-light">
       <label class="d-block fw-bold mb-1">${subject.name} (${subject.code}):</label>
       
@@ -97,11 +97,11 @@ response.subjects.forEach(function (subject) {
       </div>
     </div>
   `;
-});
+              });
 
-}
+            }
 
-            
+
             else {
               studentMakrsBox = "No subjects available for this class/section.";
             }
@@ -184,6 +184,7 @@ response.subjects.forEach(function (subject) {
 
     $('#loadingSpinner').removeClass('d-none');
     $('#bulkMarksTableContainer').addClass('d-none');
+    $('#noDataMessage').addClass('d-none').text('');
 
     loadBulkMarksData(classId, sectionId, examTypeId);
   });
@@ -200,17 +201,25 @@ response.subjects.forEach(function (subject) {
       success: function (data) {
         $('#loadingSpinner').addClass('d-none');
 
-        if (data.students && data.subjects) {
-          renderBulkMarksTable(data.students, data.subjects);
-          $('#bulkMarksTableContainer').removeClass('d-none');
-        } else {
-          alert('No data found for the selected criteria');
-        }
-      },
-      error: function (xhr) {
-        $('#loadingSpinner').addClass('d-none');
-        alert('Error loading data: ' + (xhr.responseJSON?.error || 'Server error'));
+       
+      if (data.students && data.students.length > 0 && data.subjects && data.subjects.length > 0) {
+        $('#noDataMessage').addClass('d-none').text('');
+        renderBulkMarksTable(data.students, data.subjects);
+        $('#bulkMarksTableContainer').removeClass('d-none');
+      } else {
+        $('#bulkMarksTableContainer').addClass('d-none');
+        $('#noDataMessage')
+          .removeClass('d-none')
+          .text(data.message || 'No data found for the selected criteria.');
       }
+      },
+       error: function (xhr) {
+      $('#loadingSpinner').addClass('d-none');
+      $('#bulkMarksTableContainer').addClass('d-none');
+      $('#noDataMessage')
+        .removeClass('d-none')
+        .text(xhr.responseJSON?.error || 'Server error');
+    }
     });
   }
 

@@ -1,165 +1,165 @@
 <%- include('../layouts/header') %>
 
-<div class="container-fluid mt-4">
-  <div class="card">
-    <div
-      class="card-header bg-primary text-white d-flex justify-content-between align-items-center"
-    >
-      <h3>
-        <i class="fa-solid fa-arrow-up-right-dots"></i>Students Promotion
-        Management
-      </h3>
+<div class="">
+  <div class="row justify-content-center">
+    <div class="col-lg-12">
+      <div class="card shadow-lg rounded-0">
+        <%-include('../layouts/heroPage.ejs')%>
 
-      <a href="/students/student-form" class="btn btn-light">Back</a>
-    </div>
+        <div class="card-body container-fluid px-3 border">
+          <% if (typeof success === 'string' && success.trim()) { %>
+          <div
+            class="alert alert-success alert-dismissible fade show"
+            role="alert"
+          >
+            <%= success %>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="alert"
+              aria-label="Close"
+            ></button>
+          </div>
+          <% } %> <% if (typeof error === 'string' && error.trim()) { %>
+          <div
+            class="alert alert-danger alert-dismissible fade show"
+            role="alert"
+          >
+            <%= error %>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="alert"
+              aria-label="Close"
+            ></button>
+          </div>
+          <% } %>
 
-    <div class="card-body p-2 border">
-      <% if (success && typeof success === 'string' && success.trim() !== '') {
-      %>
-      <div class="alert alert-success alert-dismissible fade show" role="alert">
-        <%= success %>
-        <button
-          type="button"
-          class="btn-close"
-          data-bs-dismiss="alert"
-          aria-label="Close"
-        ></button>
-      </div>
-      <% } %> <% if (error) { %>
-      <div class="alert alert-danger alert-dismissible fade show" role="alert">
-        <%= error %>
-        <button
-          type="button"
-          class="btn-close"
-          data-bs-dismiss="alert"
-          aria-label="Close"
-        ></button>
-      </div>
-      <% } %>
-
-      <div class="row mb-4">
-        <div class="col-md-6">
-          <div class="card">
-            <div class="card-header bg-info text-white">
-              <h5>Promote Students</h5>
-            </div>
-            <div class="card-body">
-              <form action="/promotion/auto" method="POST">
-                <div class="row mb-3">
-                  <div class="col-md-6">
-                    <div class="form-group">
-                      <label>Academic Year:</label>
-                      <input
-                        type="text"
-                        class="form-control"
-                        value="<%= academicYear %>"
-                        readonly
-                      />
+          <div class="row mb-4">
+            <div class="col-md-6">
+              <div class="card">
+                <div class="card-header bg-green-600 text-white">
+                  <h5>Promote Students</h5>
+                </div>
+                <div class="card-body">
+                  <form action="/promotion/auto" method="POST">
+                    <div class="row mb-3">
+                      <div class="col-md-6">
+                        <div class="form-group">
+                          <label>Academic Year:</label>
+                          <input
+                            type="text"
+                            class="form-control"
+                            value="<%= academicYear %>"
+                            readonly
+                          />
+                        </div>
+                      </div>
+                      <div class="col-md-6">
+                        <div class="form-group">
+                          <label>New Academic Year</label>
+                          <input
+                            type="text"
+                            name="academicYear"
+                            class="form-control"
+                            value="<%= nextYear %>"
+                            required
+                            pattern="\d{4}-\d{4}"
+                            title="Format: YYYY-YYYY"
+                            readonly
+                          />
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                  <div class="col-md-6">
-                    <div class="form-group">
-                      <label>New Academic Year</label>
-                      <input
-                        type="text"
-                        name="academicYear"
-                        class="form-control"
-                        value="<%= nextYear %>"
-                        required
-                        pattern="\d{4}-\d{4}"
-                        title="Format: YYYY-YYYY"
-                        readonly
-                      />
-                    </div>
+                    <button type="submit" class="btn btn-success mt-4">
+                      <i class="fas fa-magic me-2"></i> Run Automatic Promotion
+                    </button>
+                  </form>
+                  <div class="mt-3 alert alert-warning">
+                    This will promote all passed students to the next class.
+                    Students who failed will remain in their current class.
                   </div>
                 </div>
-                <button type="submit" class="btn btn-success mt-4">
-                  <i class="fas fa-magic me-2"></i> Run Automatic Promotion
-                </button>
-              </form>
-              <div class="mt-3 alert alert-warning">
-                This will promote all passed students to the next class.
-                Students who failed will remain in their current class.
+              </div>
+            </div>
+
+            <div class="col-md-6">
+              <div class="card">
+                <div class="card-header bg-green-600 text-white">
+                  <h5>Promotion Statistics</h5>
+                </div>
+                <div class="card-body">
+                  <div class="table-responsive">
+                    <table class="table table-hover">
+                      <thead class="table-">
+                        <tr>
+                          <th>Class</th>
+                          <th>Total Students</th>
+                          <th>Passed</th>
+                          <th>Failed</th>
+
+                          <th>Next Class</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <% classes.forEach(cls => { %>
+                        <tr>
+                          <td><%= cls.class_name %></td>
+                          <td><%= cls.studentCount %></td>
+                          <td
+                            class="<%= cls.passedStudents > 0 ? 'text-success fw-bold' : '' %>"
+                          >
+                            <%= cls.passedStudents %>
+                          </td>
+                          <td
+                            class="<%= cls.failedStudents > 0 ? 'text-danger fw-bold' : '' %>"
+                          >
+                            <%= cls.failedStudents %>
+                          </td>
+
+                          <td>
+                            <%= cls.nextClass ? cls.nextClass.class_name :
+                            'Graduation' %>
+                          </td>
+                        </tr>
+                        <% }); %>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
-        </div>
 
-        <div class="col-md-6">
           <div class="card">
-            <div class="card-header bg-secondary text-white">
-              <h5>Promotion Statistics</h5>
+            <div class="card-header bg-green-600 text-white">
+              <h5>Class Hierarchy</h5>
             </div>
             <div class="card-body">
-              <div class="table-responsive">
-                <table class="table table-hover">
-                  <thead class="table-dark">
-                    <tr>
-                      <th>Class</th>
-                      <th>Total Students</th>
-                      <th>Passed</th>
-                      <th>Failed</th>
-
-                      <th>Next Class</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <% classes.forEach(cls => { %>
-                    <tr>
-                      <td><%= cls.class_name %></td>
-                      <td><%= cls.studentCount %></td>
-                      <td
-                        class="<%= cls.passedStudents > 0 ? 'text-success fw-bold' : '' %>"
-                      >
-                        <%= cls.passedStudents %>
-                      </td>
-                      <td
-                        class="<%= cls.failedStudents > 0 ? 'text-danger fw-bold' : '' %>"
-                      >
-                        <%= cls.failedStudents %>
-                      </td>
-
-                      <td>
-                        <%= cls.nextClass ? cls.nextClass.class_name :
-                        'Graduation' %>
-                      </td>
-                    </tr>
-                    <% }); %>
-                  </tbody>
-                </table>
+              <div class="class-hierarchy">
+                <% classes.forEach((cls, index) => { %>
+                <div class="class-level d-flex align-items-center mb-3">
+                  <div class="class-box bg-light p-3 border rounded shadow-sm">
+                    <i class="fas fa-graduation-cap me-2"></i>
+                    <strong><%= cls.class_name %></strong>
+                    <span class="badge bg-primary ms-2">
+                      <%= cls.studentCount %> student(s)
+                    </span>
+                  </div>
+                  <% if (index < classes.length - 1) { %>
+                  <div class="mx-3">
+                    <i class="fas fa-arrow-right fa-2x text-muted"></i>
+                  </div>
+                  <% } %>
+                </div>
+                <% }); %>
               </div>
             </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="card">
-        <div class="card-header bg-dark text-white">
-          <h5>Class Hierarchy</h5>
-        </div>
-        <div class="card-body">
-          <div class="class-hierarchy">
-            <% classes.forEach((cls, index) => { %>
-            <div class="class-level d-flex align-items-center mb-3">
-              <div class="class-box bg-light p-3 border rounded shadow-sm">
-                <i class="fas fa-graduation-cap me-2"></i>
-                <strong><%= cls.class_name %></strong>
-                <span class="badge bg-primary ms-2">
-                  <%= cls.studentCount %> student(s)
-                </span>
-              </div>
-              <% if (index < classes.length - 1) { %>
-              <div class="mx-3">
-                <i class="fas fa-arrow-right fa-2x text-muted"></i>
-              </div>
-              <% } %>
-            </div>
-            <% }); %>
           </div>
         </div>
       </div>
     </div>
+
+    <%- include('../layouts/footer') %>
   </div>
 </div>
-
-<%- include('../layouts/footer') %>

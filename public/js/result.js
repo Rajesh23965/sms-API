@@ -210,7 +210,7 @@ $(document).ready(function () {
 
 
 
-  
+
 
   // Download Class Results as PDF
   function downloadClassResultsPDF(response) {
@@ -406,118 +406,172 @@ function displayStudentResult(response) {
   container.removeClass('d-none');
 }
 
-
-//individual Result PDF
 async function downloadIndividualMarksheet(response) {
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({
     orientation: "portrait",
     unit: "mm",
     format: "a4",
-    filters: ["ASCIIHexEncode"],
   });
 
   // Constants
-  const pageWidth = 210; // A4 width
-  const pageHeight = 297; // A4 height
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
   const margin = 15;
   const logoSize = 20;
   let yPos = 10;
 
+  // Styles
   const styles = {
     header1: { fontSize: 18, fontStyle: "bold", lineHeight: 1.2 },
     header2: { fontSize: 14, fontStyle: "bold", lineHeight: 1.2 },
     normal: { fontSize: 11, lineHeight: 1.2 },
-    small: { fontSize: 10, lineHeight: 1.2 },
+    small: { fontSize: 9, lineHeight: 1.2 },
+    tiny: { fontSize: 8, lineHeight: 1.1 }
   };
 
-  // Normalize image paths
-  let schoolLogoPath = response.school?.logo;
-  if (schoolLogoPath && !schoolLogoPath.startsWith('http')) {
-    schoolLogoPath = `http://localhost:5001/uploads/school/${schoolLogoPath.split('/').pop()}`;
-  }
+  // Colors
+  const colors = {
+    primary: [51, 51, 51],
+    secondary: [70, 130, 180],
+    accent: [220, 53, 69],
+    lightBg: [240, 240, 240]
+  };
 
-  let studentImagePath = response.student?.image;
-  if (studentImagePath && !studentImagePath.startsWith('http')) {
-    studentImagePath = `http://localhost:5001/uploads/students/${studentImagePath.split('/').pop()}`;
-  }
+  // Helper function to add text with optional styling
+  const addText = (text, x, y, options = {}) => {
+    const { fontSize = styles.normal.fontSize, fontStyle = 'normal', align = 'left', color = [0, 0, 0] } = options;
+    doc.setFontSize(fontSize)
+      .setFont("helvetica", fontStyle)
+      .setTextColor(...color)
+      .text(text, x, y, { align });
+  };
+  yPos += 5;
+  // Load images with error handling
+  const loadImages = async () => {
+    try {
+      // School Logo
+      let schoolLogoPath = response.school?.logo;
+      if (schoolLogoPath && !schoolLogoPath.startsWith('http')) {
+        schoolLogoPath = `http://localhost:5001/uploads/school/${schoolLogoPath.split('/').pop()}`;
+      }
 
-  // Add images (school logo and student photo)
-  try {
-    if (schoolLogoPath) {
-      const schoolLogoImg = await loadImage(schoolLogoPath);
-      doc.addImage(schoolLogoImg, 'JPEG', margin, yPos + 5, logoSize, logoSize);
+      // Student Photo
+      let studentImagePath = response.student?.image;
+      if (studentImagePath && !studentImagePath.startsWith('http')) {
+        studentImagePath = `http://localhost:5001/uploads/students/${studentImagePath.split('/').pop()}`;
+      }
+
+      const [schoolLogoImg, studentImg] = await Promise.all([
+        schoolLogoPath ? loadImage(schoolLogoPath).catch(() => null) : null,
+        studentImagePath ? loadImage(studentImagePath).catch(() => null) : null
+      ]);
+
+      return { schoolLogoImg, studentImg };
+    } catch (error) {
+      console.error("Error loading images:", error);
+      return { schoolLogoImg: null, studentImg: null };
     }
+  };
 
-    if (studentImagePath) {
-      const studentImg = await loadImage(studentImagePath);
-      doc.addImage(studentImg, 'JPEG', pageWidth - margin - logoSize, yPos + 5, logoSize, logoSize);
-    }
-  } catch (error) {
-    console.error("Error loading images:", error);
+  const { schoolLogoImg, studentImg } = await loadImages();
+
+  // Header Section
+  if (schoolLogoImg) {
+    doc.addImage(schoolLogoImg, 'JPEG', margin, yPos, logoSize, logoSize);
   }
 
-  // School information
-  doc.setFont("helvetica", styles.header1.fontStyle)
-    .setFontSize(styles.header1.fontSize)
-    .text(response.school.name, pageWidth / 2, yPos + 10, { align: "center" })
-    .setFontSize(styles.normal.fontSize)
-    .text(response.school.address, pageWidth / 2, yPos + 16, { align: "center" });
+  // School Information (Dynamic)
+  addText(response.school.name.toUpperCase(), pageWidth / 2, yPos + 10, {
+    fontSize: styles.header1.fontSize,
+    fontStyle: 'bold',
+    align: 'center'
+  });
+
+  addText(response.school.address, pageWidth / 2, yPos + 16, {
+    align: 'center',
+    fontSize: styles.small.fontSize
+  });
+
+  // Add accreditation/affiliation if available 
+  if (response.school.affiliation) {
+    addText(`Affiliated to: ${response.school.affiliation}`, pageWidth / 2, yPos + 21, {
+      align: 'center',
+      fontSize: styles.small.fontSize,
+      fontStyle: 'italic'
+    });
+  }
+
+  // Student Photo 
+  if (studentImg) {
+    doc.addImage(studentImg, 'JPEG', pageWidth - margin - logoSize, yPos, logoSize, logoSize);
+  }
 
   yPos += 30;
 
-  // Marksheet title
-  doc.setFontSize(styles.header2.fontSize)
-    .setFont("helvetica", "bold")
-    .text("ACADEMIC REPORT CARD", pageWidth / 2, yPos, { align: "center" })
-    .setFontSize(styles.small.fontSize)
-    .setFont("helvetica", "italic")
-    .text(`Academic Year: ${response.academicYear} | ${response.exam.name}`, pageWidth / 2, yPos + 6, { align: "center" });
+  // Marksheet Title (Dynamic with static text)
+  addText("ACADEMIC REPORT CARD", pageWidth / 2, yPos, {
+    fontSize: styles.header2.fontSize,
+    fontStyle: 'bold',
+    align: 'center',
+    color: colors.secondary
+  });
+
+  addText(`Academic Year: ${response.student.academicYear} | ${response.exam.name} Examination`, pageWidth / 2, yPos + 6, {
+    fontSize: styles.small.fontSize,
+    align: 'center',
+    fontStyle: 'italic'
+  });
 
   yPos += 15;
 
-  // Student info
+  // Student Information Table (Dynamic)
   const studentInfo = [
-    { label: "Student Name", value: response.student.name },
     { label: "Admission No", value: response.student.admissionNo },
+    { label: "Date of Birth", value: response.student.dob ? new Date(response.student.dob).toLocaleDateString() : "N/A" },
+    { label: "Student Name", value: response.student.name },
     { label: "Class", value: `${response.student.class} (${response.student.section})` },
-    { label: "Roll Number", value: response.student.rollNumber || "N/A" },
   ];
 
-  studentInfo.forEach((info, index) => {
-    const x = index < 2 ? margin : pageWidth / 2;
-    const lineY = yPos + (index % 2) * 8;
+  // Create a table-like layout for student info
+  const infoCol1Width = 40;
+  const infoCol2Width = 40;
+  const infoRowHeight = 8;
 
-    doc.setFont("helvetica", "bold")
-      .setFontSize(styles.normal.fontSize)
-      .text(`${info.label}:`, x, lineY)
-      .setFont("helvetica", "normal")
-      .text(info.value, x + 30, lineY);
+  studentInfo.forEach((info, index) => {
+    const col = index % 2;
+    const row = Math.floor(index / 2);
+    const x = margin + (col * (infoCol1Width + infoCol2Width + 6));
+    const y = yPos + (row * infoRowHeight);
+
+    addText(info.label + ":", x, y, { fontStyle: 'bold' });
+    addText(info.value, x + infoCol1Width, y);
   });
 
   yPos += 20;
 
-  // Subject table
+  // Subjects Table with Max Marks 
   const columns = [
-    { header: "Subject", dataKey: "subject" },
-    { header: "Code", dataKey: "code" },
-    { header: "Theory", dataKey: "theory" },
-    { header: "Practical", dataKey: "practical" },
-    { header: "Total", dataKey: "total" },
-    { header: "Grade", dataKey: "grade" },
-    { header: "Status", dataKey: "status" },
+    { header: "Subject", dataKey: "subject", width: 35 },
+    { header: "Code", dataKey: "code", width: 35 },
+    { header: "Theory", dataKey: "theory", width: 20 },
+    { header: "Practical", dataKey: "practical", width: 25 },
+    { header: "Total", dataKey: "total", width: 20 },
+    { header: "Grade", dataKey: "grade", width: 20 },
+    { header: "Remarks", dataKey: "remarks", width: 25 }
   ];
 
   const rows = response.subjects.map(subject => ({
     subject: subject.name,
     code: subject.code,
-    theory: subject.theoryMarks || "-",
+    theory: subject.marks || "-",
     practical: subject.practicalMarks || "-",
-    total: subject.marks,
+    total: subject.totalMarks,
     grade: subject.grade,
-    status: subject.status,
+    remarks: subject.remarks || ""
   }));
 
+  // Add table with alternating row colors
   doc.autoTable({
     startY: yPos,
     head: [columns.map(col => col.header)],
@@ -525,71 +579,130 @@ async function downloadIndividualMarksheet(response) {
     theme: "grid",
     styles: {
       fontSize: styles.small.fontSize,
-      cellPadding: 2,
+      cellPadding: 3,
       overflow: "linebreak",
+      valign: "middle"
     },
-    headerStyles: {
-      fillColor: [51, 51, 51],
+    headStyles: {
+      fillColor: colors.primary,
       textColor: 255,
       fontStyle: "bold",
+      halign: "center"
     },
-    columnStyles: {
-      0: { cellWidth: 45 },
-      1: { cellWidth: 20 },
-      2: { cellWidth: 20 },
-      3: { cellWidth: 25 },
-      4: { cellWidth: 20 },
-      5: { cellWidth: 15 },
-      6: { cellWidth: 20 },
+    bodyStyles: {
+      halign: "center"
     },
+    alternateRowStyles: {
+      fillColor: colors.lightBg
+    },
+    columnStyles: columns.reduce((acc, col, index) => {
+      acc[index] = { cellWidth: col.width };
+      if (index === 0) acc[index].halign = "left";
+      return acc;
+    }, {}),
     margin: { left: margin, right: margin },
+    didDrawCell: (data) => {
+      // Highlight failed subjects
+      if (data.column.dataKey === "remarks" && data.cell.raw.toLowerCase().includes("fail")) {
+        doc.setTextColor(colors.accent);
+      }
+    }
   });
 
-  // Summary section
+  // Summary Section (Dynamic with static labels)
   const summaryY = doc.lastAutoTable.finalY + 10;
   const summaryData = [
-    { label: "Total Marks Obtained:", value: response.summary.totalMarks },
+    { label: "Total Marks:", value: response.summary.totalMarks },
     { label: "Percentage:", value: `${response.summary.overallPercentage}%` },
     { label: "CGPA:", value: response.summary.cgpa },
-    { label: "Result Status:", value: response.summary.overallStatus },
+    { label: "Result Status:", value: response.summary.overallStatus }
   ];
 
+  // Create a grid for summary information
+  const summaryColWidth = 60;
   summaryData.forEach((item, index) => {
-    const x = index % 2 === 0 ? margin : pageWidth / 2;
-    const y = summaryY + Math.floor(index / 2) * 10;
+    const col = index % 3;
+    const row = Math.floor(index / 3);
+    const x = margin + (col * summaryColWidth);
+    const y = summaryY + (row * 8);
 
-    doc.setFont("helvetica", "bold")
-      .setFontSize(styles.normal.fontSize)
-      .text(item.label, x, y)
-      .setFont("helvetica", "normal")
-      .text(item.value.toString(), x + 35, y);
+    addText(item.label, x, y, { fontStyle: 'bold' });
+    addText(item.value.toString(), x + 30, y);
+
+    // Highlight result status
+    if (item.label === "Result Status:") {
+      const statusColor = item.value.toLowerCase() === "pass" ? [0, 128, 0] : colors.accent;
+      addText(item.value, x + 35, y, { color: statusColor, fontStyle: 'bold' });
+    }
   });
 
-  // Footer
-  const footerY = pageHeight - 15;
-  doc.setFontSize(styles.small.fontSize)
-    .setTextColor(100)
-    .text("Generated on: " + new Date().toLocaleDateString(), margin, footerY)
-    .text("Official School Stamp", pageWidth - margin - 40, footerY, {
-      align: "right",
-    });
 
-  // Border
-  doc.setDrawColor(200)
+  const staticFieldsY = doc.lastAutoTable.finalY + 30;
+  const fieldSpacing = 60;
+  const signatureY = staticFieldsY + 15;
+
+  // Checked By
+  addText("Checked By:", margin, signatureY);
+  doc.line(margin + 20, signatureY + 1, margin + 70, signatureY + 1);
+  addText("(Subject Teacher)", margin, signatureY + 5, { fontSize: styles.tiny.fontSize });
+
+  // Class Teacher
+  addText("Class Teacher:", margin + fieldSpacing, signatureY);
+  doc.line(margin + fieldSpacing + 25, signatureY + 1, margin + fieldSpacing + 75, signatureY + 1);
+  addText("(Signature)", margin + fieldSpacing, signatureY + 5, { fontSize: styles.tiny.fontSize });
+
+  // Principal
+  addText("Principal:", margin + 2 * fieldSpacing, signatureY);
+  doc.line(margin + 2 * fieldSpacing + 20, signatureY + 1, margin + 2 * fieldSpacing + 70, signatureY + 1);
+  addText("(Seal & Signature)", margin + 2 * fieldSpacing, signatureY + 5, { fontSize: styles.tiny.fontSize });
+
+  // Date
+  const currentDate = new Date().toLocaleDateString();
+  addText("Date:", pageWidth - margin - 50, signatureY);
+  doc.line(pageWidth - margin - 40, signatureY + 1, pageWidth - margin, signatureY + 1);
+  addText(currentDate, pageWidth - margin - 30, signatureY + 5, { fontSize: styles.tiny.fontSize });
+
+  // Footer (Static with dynamic generation date)
+  const footerY = pageHeight - 10;
+  addText(`Generated on: ${new Date().toLocaleString()}`, margin, footerY, {
+    fontSize: styles.tiny.fontSize,
+    color: [100, 100, 100]
+  });
+
+  addText("This is a computer generated document. No signature required.", pageWidth / 2, footerY, {
+    align: "center",
+    fontSize: styles.tiny.fontSize,
+    color: [100, 100, 100]
+  });
+
+  // Border (Static design element)
+  doc.setDrawColor(150)
+    .setLineWidth(0.5)
     .rect(margin - 5, margin - 5, pageWidth - margin * 2 + 10, pageHeight - margin * 2 + 10);
 
+  // Watermark (Conditional static element)
+  if (response.summary.overallStatus.toLowerCase() === "fail") {
+    doc.setFontSize(60)
+      .setTextColor(200, 0, 0, 20)
+      .setFont("helvetica", "bold")
+      .text("FAILED", pageWidth / 2, pageHeight / 2, {
+        align: "center",
+        angle: 45
+      });
+  }
+
   // Save PDF
-  doc.save(`${response.student.name.replace(/ /g, "_")}_Marksheet.pdf`);
+  doc.save(`${response.student.name.replace(/ /g, "_")}_${response.exam.name.replace(/ /g, "_")}_Marksheet.pdf`);
 }
 
-// Image loader
-function loadImage(src) {
+// Helper function to load images
+async function loadImage(url) {
   return new Promise((resolve, reject) => {
     const img = new Image();
-    img.crossOrigin = 'Anonymous';
+    img.setAttribute('crossOrigin', 'anonymous');
     img.onload = () => resolve(img);
-    img.onerror = reject;
-    img.src = src;
+    img.onerror = () => reject(new Error(`Failed to load image from ${url}`));
+    img.src = url;
   });
 }
 

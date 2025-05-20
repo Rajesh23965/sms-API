@@ -1,18 +1,12 @@
 <%- include('../layouts/header') %>
 
-<div class="container-fluid">
+<div class="">
   <div class="row justify-content-center">
     <div class="col-lg-12">
       <div class="card shadow-lg rounded-0">
-        <div
-          class="card-header bg-dark-subtle text-capitalize d-flex justify-content-between align-items-center"
-        >
-          <h3><i class="fas fa-book me-2"></i>Subject Management</h3>
-          <a class="btn btn-danger" href="/subjects/subject-form"
-            >Add New Subject</a
-          >
-        </div>
-        <div class="card-body p-2 border">
+        <%-include('../layouts/heroPage.ejs')%>
+
+        <div class="card-body container-fluid px-3  border">
           <% if (success) { %>
           <div
             class="alert alert-success alert-dismissible fade show"
@@ -41,7 +35,7 @@
           </div>
           <% } %>
 
-          <div class="card-header mb-3 bg-danger text-light">
+          <div class="card-header  bg-green-600 text-light">
             <h5><%= subjectId ? 'Edit' : 'Create' %> Subject</h5>
           </div>
           <div class="">
@@ -49,74 +43,96 @@
             <form
                 action="/subjects/subject-form<%= subjectId ? '?subjectId=' + subjectId : '' %>"
                 method="POST"
-                class="border p-4 rounded bg-light grid grid-cols-1 md:grid-cols-3 gap-4 mb-3"
+                class="border p-4 rounded bg-light "
                 id="subjectForm"
-                data-mode="<%= subjectId ? 'edit' : 'add' %>"
+          
             >
-                <div class="mb-3">
-                    <label class="form-label">Subject Name</label>
-                    <input
+                  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="mb-3">
+                      <label class="form-label">Subject Name</label>
+                      <input
                         type="text"
                         name="name"
+                        placeholder="Enter subject name"
                         class="form-control <%= errorFields.includes('name') ? 'is-invalid' : '' %>"
                         value="<%= subjectData?.name || oldInput.name || '' %>"
                         required
-                    />
-                </div>
+                      />
+                    </div>
 
-                <div class="mb-3">
-                    <label class="form-label">Full Marks</label>
-                    <input
-                        type="number"
-                        name="fullmarks"
-                        class="form-control <%= errorFields.includes('fullmarks') ? 'is-invalid' : '' %>"
-                        value="<%= subjectData?.fullmarks || oldInput.fullmarks || '' %>"
-                        required
-                    />
-                </div>
-
-                <div class="mb-3">
-                    <label class="form-label">Pass Marks</label>
-                    <input
-                        type="number"
-                        name="passmarks"
-                        class="form-control <%= errorFields.includes('passmarks') ? 'is-invalid' : '' %>"
-                        value="<%= subjectData?.passmarks || oldInput.passmarks || '' %>"
-                        required
-                    />
-                </div>
-                
-                <div class="mb-3">
-                    <label class="form-label">Practical Marks</label>
-                    <input
-                        type="number"
-                        name="practicalMarks"
-                        class="form-control <%= errorFields.includes('practicalMarks') ? 'is-invalid' : '' %>"
-                        value="<%= subjectData?.practicalMarks || oldInput.practicalMarks || '' %>"
-                        required
-                    />
-                </div>
-                 <div class="mb-3">
-                    <label class="form-label">Practical Pass Marks</label>
-                    <input
-                        type="number"
-                        name="practicalPassmarks"
-                        class="form-control <%= errorFields.includes('practicalPassmarks') ? 'is-invalid' : '' %>"
-                        value="<%= subjectData?.practicalPassmarks || oldInput.practicalPassmarks || '' %>"
-                        required
-                    />
-                </div>
-                
-                <div class="mb-3">
-                    <label class="form-label">Credit hour</label>
-                    <input
+                    <div class="mb-3">
+                      <label class="form-label">Credit Hour</label>
+                      <input
                         type="number"
                         name="creditHour"
+                        placeholder="Enter Credit hour"
                         class="form-control <%= errorFields.includes('creditHour') ? 'is-invalid' : '' %>"
                         value="<%= subjectData?.creditHour || oldInput.creditHour || '' %>"
                         required
-                    />
-                </div>
+                      />
+                    </div>
+                  </div>
+
+               
+                <div class="col-8 space-y-6">
+                  <!-- Theory Section -->
+                  <div>
+                    <h5 class="bg-green-600 text-light p-2 rounded">Theory</h5>
+                    <div class="flex gap-4 mt-2">
+                      <div class="flex flex-col w-1/3">
+                        <label class="form-label">Full Marks</label>
+                        <input
+                          type="number"
+                          name="fullmarks"
+                          class="form-control <%= errorFields.includes('fullmarks') ? 'is-invalid' : '' %>"
+                          value="<%= subjectData?.fullmarks || oldInput.fullmarks || '' %>"
+                          required
+                        />
+                      </div>
+                      <div class="flex flex-col w-1/3">
+                        <label class="form-label">Pass Marks</label>
+                        <input
+                          type="number"
+                          name="passmarks"
+                          class="form-control <%= errorFields.includes('passmarks') ? 'is-invalid' : '' %>"
+                          value="<%= subjectData?.passmarks || oldInput.passmarks || '' %>"
+                          required
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Practical Section -->
+                  <div>
+                    <h5 class="bg-green-600 text-light p-2 rounded">Practical</h5>
+                    <div class="flex gap-4 mt-2">
+                      <div class="flex flex-col w-1/3">
+                        <label class="form-label">Practical Marks (FM)</label>
+                        <input
+                          type="number"
+                          name="practicalMarks"
+                          class="form-control <%= errorFields.includes('practicalMarks') ? 'is-invalid' : '' %>"
+                          value="<%= subjectData?.practicalMarks || oldInput.practicalMarks || '' %>"
+                          required
+                        />
+                      </div>
+                      <div class="flex flex-col w-1/3">
+                        <label class="form-label">Practical Pass Marks (PM)</label>
+                        <input
+                          type="number"
+                          name="practicalPassmarks"
+                          class="form-control <%= errorFields.includes('practicalPassmarks') ? 'is-invalid' : '' %>"
+                          value="<%= subjectData?.practicalPassmarks || oldInput.practicalPassmarks || '' %>"
+                          required
+                        />
+                      </div>
+                    </div>
+                  </div>
+              </div>
+
+              
+                
+               
 
                 <div class="mb-3 col-span-3">
                     <label class="form-label">Classes & Sections</label>
@@ -195,7 +211,7 @@
                     </div>
                 </div>
                 
-                <button type="submit" class="btn btn-success btn-lg w-full">
+                <button type="submit" class="btn bg-green-600  bg:bg-green-700  btn-lg w-full">
                     <i class="fas fa-paper-plane me-2"></i><%= subjectId ? 'Update' : 'Create' %> Subject
                 </button>
             </form>
@@ -208,11 +224,11 @@
                 <input 
                   type="search" 
                   name="search" 
-                  class="border-2 border-gray-600 rounded-lg p-2" 
+                  class="border-2 border-green-600 rounded-lg p-2" 
                   placeholder="Search by subject, class, or section"
                   value="<%= searchQuery || '' %>"
                 >
-                <button type="submit" class="btn btn-primary">Search</button>
+                <button type="submit" class="btn bg-green-600 hover:bg-green-700">Search</button>
                 <% if (searchQuery) { %>
                   <a href="/subjects/subject-form" class="btn btn-secondary">Clear</a>
                 <% } %>

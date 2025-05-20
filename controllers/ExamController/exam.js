@@ -87,7 +87,14 @@ const loadExamTypeForm = async (req, res) => {
       termDetails,
       currentTerm,
       academicYears,
-      examTypes: ['weekly', 'monthly', 'terminal', 'final']
+      examTypes: ['weekly', 'monthly', 'terminal', 'final'],
+      title: "Academic Terms & Exams Management",
+      header: "Exam Type Setup",
+      headerIcon: "fas fa-calendar-alt",
+      buttons: [
+        { text: "Exam", href: "/exams/exam-form", color: "red", icon: "fas fa-clipboard" },
+        { text: "Refresh", href: "/exams/exam-form-type", color: "green", icon: "fa-solid fa-rotate" }
+      ]
     });
 
   } catch (error) {
@@ -319,7 +326,26 @@ const loadExamForm = async (req, res) => {
       error,
       success,
       examTypeId,
+      title: "Exam Management",
+      header: "Exam Setup",
+      headerIcon: "fas fa-clipboard",
+      buttons: [
+        {
+          text: "Exam Type",
+          href: "/exams/exam-form-type",
+          color: "red",
+          icon: "fas fa-users",
+        },
+        {
+          text: "Bulk Marks Entry",
+          href: "#bulkMarksModal", // link to modal ID
+          color: "blue",
+          icon: "fas fa-pen",
+          isModal: true,
+        },
+      ],
     });
+
   } catch (error) {
     console.error("Error loading exam form:", error);
 

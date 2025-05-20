@@ -1,16 +1,11 @@
 <%- include('../layouts/header') %>
-
-<div class="container-fluid">
+<div class="">
   <div class="row justify-content-center">
     <div class="col-lg-12">
       <div class="card shadow-lg rounded-0">
-        <div
-          class="card-header bg-dark-subtle text-capitalize d-flex justify-content-between align-items-center"
-        >
-          <h3><i class="fas fa-user-graduate me-2"></i>Class Setup</h3>
-        </div>
+        <%-include('../layouts/heroPage.ejs')%>
 
-        <div class="card-body p-2 border">
+        <div class="card-body container-fluid px-3 border">
           <% if (success) { %>
           <div
             class="alert alert-success alert-dismissible fade show"
@@ -39,254 +34,274 @@
           </div>
           <% } %>
 
-          <!-- Class Management Section -->
-          <div class="card-header mb-1 bg-danger text-light">
-            <h5>Class Details</h5>
-          </div>
-
-          <div class="row">
-            <div class="p-0 m-0">
-              <form
-                action="/classes/api/classes<%= studentclassById ? '?classId=' + studentclassById.id : '' %>"
-                method="POST"
-              >
-                <div
-                  class="flex justify-content-between items-center border p-3 bg-body-tertiary"
+          <div class="container-fluid py-4">
+            <div class="row gy-4">
+              <div class="col-12 col-lg-6">
+                <form
+                  action="/classes/api/classes<%= studentclassById ? '?classId=' + studentclassById.id : '' %>"
+                  method="POST"
+                  class="card shadow-sm"
                 >
-                  <div class="mb-3">
-                    <label class="form-label">Class Name</label>
-                    <input
-                      type="text"
-                      name="class_name"
-                      class="form-control <%= errorFields.includes('class_name') ? 'is-invalid' : '' %>"
-                      value="<%= oldInput?.class_name || studentclassById?.class_name || '' %>"
-                      placeholder="Enter Class Name"
-                      required
-                    />
+                  <div
+                    class="card-header bg-green-600 text-white d-flex justify-content-between align-items-center"
+                  >
+                    <h5 class="mb-0">
+                      <i class="fas fa-plus-circle me-2"></i><%=
+                      studentclassById ? 'Edit' : 'Add' %> Class
+                    </h5>
                   </div>
-
-                  <div class="">
-                    <button type="submit" class="btn btn-success btn-lg">
-                      <i class="fas fa-paper-plane"></i>
-                      <%=studentclassById?"Edit":"Add"%> Class
-                    </button>
+                  <div class="card-body">
+                    <div class="mb-3">
+                      <label class="form-label">Class Name</label>
+                      <input
+                        type="text"
+                        name="class_name"
+                        class="form-control <%= errorFields.includes('class_name') ? 'is-invalid' : '' %>"
+                        value="<%= oldInput?.class_name || studentclassById?.class_name || '' %>"
+                        placeholder="Enter Class Name"
+                        required
+                      />
+                    </div>
                   </div>
-                </div>
-              </form>
-            </div>
-
-            <!-- Class List Table -->
-            <div class="p-0 m-0">
-              <div class="table-responsive bg-body-secondary">
-                <table class="table table-bordered table-hover">
-                  <thead class="table-light">
-                    <tr>
-                      <th>S.N</th>
-                      <th>Class Name</th>
-                      <th>Action</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <% if (classlist && classlist.length > 0) { %> <%
-                    classlist.forEach((cl, index) => { %>
-                    <tr>
-                      <td><%= index + 1 %></td>
-                      <td><%= cl.class_name %></td>
-                      <td>
-                        <a
-                          class="btn btn-outline-success fa fa-edit"
-                          href="/classes/class-form?<%= 'classId=' + cl.id %>"
-                        ></a>
-                        <a
-                          class="btn btn-outline-danger fa fa-trash"
-                          href="/classes/delete-class/<%= cl.id %>"
-                          onclick="return confirm('Are you sure you want to delete this class?');"
-                        ></a>
-                      </td>
-                    </tr>
-                    <% }) %> <% } else { %>
-                    <tr>
-                      <td colspan="3" class="text-center">
-                        No classes available
-                      </td>
-                    </tr>
-                    <% } %>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-
-          <!-- Subjects by Class and Section Section -->
-          <div class="mt-4">
-            <div
-              class="card-header mb-3 bg-primary text-light d-flex justify-content-between align-items-center"
-            >
-              <h5 class="mb-0">View Subjects by Class and Section</h5>
-              <div id="activeFilters" class="d-flex gap-2"></div>
-            </div>
-
-            <div class="row g-3 flex justify-content-between align-items-center">
-             
-              <div class="col-md-4">
-                <label for="classSelect" class="form-label fw-bold"
-                  >Select Class</label>
-
-                <select id="classSelect" class="form-select" multiple>
-                  <% if (classlist && classlist.length > 0) { %> <%
-                  classlist.forEach((cl) => { %>
-                  <option value="<%= cl.id %>"><%= cl.class_name %></option>
-                  <% }) %> <% } %>
-                </select>
-                <div class="form-text text-muted">
-                  Select one or more classes
-                </div>
-              </div>
-
-              <!-- Section Selection -->
-              <div class="col-md-4">
-                <label for="sectionSelect" class="form-label fw-bold"
-                  >Select Section</label>
-                <select
-                  id="sectionSelect"
-                  class="form-select"
-                  multiple
-                  disabled
-                >
-                  <option value="">First select a class</option>
-                </select>
-                <div class="form-text text-muted">
-                  Select one or more sections
-                </div>
-              </div>
-
-           
-              <div class="col-md-4 d-flex align-items-end">
-                <button
-                  id="searchSubjectsBtn"
-                  class="btn btn-primary w-100 "
-                  disabled
-                >
-                  <i class="fas fa-search "></i>Find Subjects
-                </button>
-              </div>
-            </div>
-
-            <!-- Results Section -->
-            <div class="mt-4" id="resultsSection" style="display: none">
-              <div class="card border-0 shadow-sm">
-                <div
-                  class="card-header bg-white border-bottom d-flex justify-content-between align-items-center"
-                >
-                  <h5 class="mb-0 text-primary">
-                    <i class="fas fa-book-open me-2"></i>Subjects
-                  </h5>
-                  <div class="d-flex gap-2">
+                  <div class="card-footer d-flex justify-content-end">
                     <button
-                      id="exportBtn"
-                      class="btn btn-sm btn-outline-success"
-                      disabled
+                      type="submit"
+                      class="btn text-white bg-green-600 hover:bg-green-700"
                     >
-                      <i class="fas fa-file-csv me-1"></i>Export CSV
-                    </button>
-                    <button
-                      id="printBtn"
-                      class="btn btn-sm btn-outline-primary"
-                    >
-                      <i class="fas fa-print me-1"></i>Print
+                      <i class="fas fa-paper-plane me-2"></i>Save
                     </button>
                   </div>
-                </div>
-                <div class="card-body p-0">
-                  <div class="table-responsive">
-                    <table class="table table-hover mb-0" id="subjectsTable">
-                      <thead class="table-light">
-                        <tr>
-                          <th width="5%">#</th>
-                          <th width="15%">Code</th>
-                          <th width="30%">Subject Name</th>
-                          <th width="20%">Class</th>
-                          <th width="20%">Section</th>
-                          <th width="20%">Actions</th>
-                        </tr>
-                      </thead>
-                      <tbody id="subjectsTableBody">
-                        <!-- Will be populated by JavaScript -->
-                      </tbody>
-                    </table>
+                </form>
+
+                <!-- Class List Table -->
+                <div class="card mt-4 shadow-sm">
+                  <div class="card-header text-white bg-green-600">
+                    <h5 class="mb-0">
+                      <i class="fas fa-list-ul me-2"></i>Class List
+                    </h5>
                   </div>
-                  <div
-                    id="emptyState"
-                    class="empty-state py-5"
-                    style="display: none"
-                  >
-                    <i class="fas fa-book fa-4x mb-3 text-muted"></i>
-                    <h4 class="text-muted">No subjects found</h4>
-                    <p class="text-center text-muted">
-                      Try selecting different classes or sections
-                    </p>
-                  </div>
-                  <div
-                    id="loadingState"
-                    class="empty-state py-5"
-                    style="display: none"
-                  >
-                    <div
-                      class="spinner-border text-primary loading-spinner mb-3"
-                      role="status"
-                    >
-                      <span class="visually-hidden">Loading...</span>
+                  <div class="card-body p-0">
+                    <div class="table-responsive">
+                      <table class="table table-bordered table-hover mb-0">
+                        <thead class="table-light">
+                          <tr>
+                            <th style="width: 10%">S.N</th>
+                            <th>Class Name</th>
+                            <th style="width: 20%">Action</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <% if (classlist && classlist.length > 0) { %> <%
+                          classlist.forEach((cl, index) => { %>
+                          <tr>
+                            <td><%= index + 1 %></td>
+                            <td><%= cl.class_name %></td>
+                            <td>
+                              <a
+                                href="/classes/class-form?<%= 'classId=' + cl.id %>"
+                                class="btn btn-sm btn-outline-success me-2"
+                              >
+                                <i class="fa fa-edit"></i>
+                              </a>
+                              <a
+                                href="/classes/delete-class/<%= cl.id %>"
+                                class="btn btn-sm btn-outline-danger"
+                                onclick="return confirm('Are you sure you want to delete this class?');"
+                              >
+                                <i class="fa fa-trash"></i>
+                              </a>
+                            </td>
+                          </tr>
+                          <% }) %> <% } else { %>
+                          <tr>
+                            <td colspan="3" class="text-center text-muted">
+                              No classes available
+                            </td>
+                          </tr>
+                          <% } %>
+                        </tbody>
+                      </table>
                     </div>
-                    <h4 class="text-muted">Loading subjects...</h4>
-                  </div>
-                  <div
-                    class="d-flex justify-content-between align-items-center p-3 border-top"
-                  >
-                    <div class="text-muted" id="resultCount">
-                      Showing 0 subjects
-                    </div>
-                    <!-- <div class="btn-group">
-                      <button class="btn btn-sm btn-outline-secondary" id="prevPage" disabled>
-                        <i class="fas fa-chevron-left"></i>
-                      </button>
-                      <button class="btn btn-sm btn-outline-secondary" id="nextPage" disabled>
-                        <i class="fas fa-chevron-right"></i>
-                      </button>
-                    </div> -->
                   </div>
                 </div>
               </div>
 
-              <div
-                class="modal fade"
-                id="subjectDetailsModal"
-                tabindex="-1"
-                aria-hidden="true"
-              >
-                <div class="modal-dialog modal-dialog-centered modal-lg">
-                  <div class="modal-content">
-                    <div class="modal-header bg-primary text-white">
-                      <h5 class="modal-title" id="subjectModalTitle">
-                        Subject Details
-                      </h5>
-                      <button
-                        type="button"
-                        class="btn-close btn-close-white"
-                        data-bs-dismiss="modal"
-                        aria-label="Close"
-                      ></button>
+              <!-- Subject by Class and Section Section -->
+              <div class="col-12 col-lg-6">
+                <div class="card shadow-sm">
+                  <div
+                    class="card-header text-white bg-green-600 d-flex justify-content-between align-items-center"
+                  >
+                    <h5 class="mb-0">
+                      <i class="fas fa-book-reader me-2"></i>View Subjects by
+                      Class and Section
+                    </h5>
+                    <div id="activeFilters" class="d-flex gap-2"></div>
+                  </div>
+
+                  <div class="card-body">
+                    <div class="row g-3">
+                      <!-- Class Select -->
+                      <div class="col-md-6">
+                        <label for="classSelect" class="form-label fw-bold"
+                          >Select Class</label
+                        >
+                        <select id="classSelect" class="form-select" multiple>
+                          <% if (classlist && classlist.length > 0) { %> <%
+                          classlist.forEach((cl) => { %>
+                          <option value="<%= cl.id %>">
+                            <%= cl.class_name %>
+                          </option>
+                          <% }) %> <% } %>
+                        </select>
+                        <small class="text-muted"
+                          >Select one or more classes</small
+                        >
+                      </div>
+
+                      <!-- Section Select -->
+                      <div class="col-md-6">
+                        <label for="sectionSelect" class="form-label fw-bold"
+                          >Select Section</label
+                        >
+                        <select
+                          id="sectionSelect"
+                          class="form-select"
+                          multiple
+                          disabled
+                        >
+                          <option value="">First select a class</option>
+                        </select>
+                        <small class="text-muted"
+                          >Select one or more sections</small
+                        >
+                      </div>
+
+                      <div class="col-12">
+                        <button
+                          id="searchSubjectsBtn"
+                          class="btn btn-green-600 hover:bg-green-700 text-black w-100"
+                          disabled
+                        >
+                          <i class="fas fa-search me-1"></i>Find Subjects
+                        </button>
+                      </div>
                     </div>
-                    <div class="modal-body" id="subjectModalBody">
-                      Loading subject details...
-                    </div>
-                    <div class="modal-footer">
+                  </div>
+                </div>
+
+                <!-- Results Section -->
+                <div
+                  class="card shadow-sm mt-4"
+                  id="resultsSection"
+                  style="display: none"
+                >
+                  <div
+                    class="card-header d-flex justify-content-between align-items-center"
+                  >
+                    <h5 class="mb-0 text-primary">
+                      <i class="fas fa-book-open me-2"></i>Subjects
+                    </h5>
+                    <div class="d-flex gap-2">
                       <button
-                        type="button"
-                        class="btn btn-secondary"
-                        data-bs-dismiss="modal"
+                        id="exportBtn"
+                        class="btn btn-sm btn-outline-success"
+                        disabled
                       >
-                        Close
+                        <i class="fas fa-file-csv me-1"></i>Export CSV
                       </button>
+                      <button
+                        id="printBtn"
+                        class="btn btn-sm btn-outline-primary"
+                      >
+                        <i class="fas fa-print me-1"></i>Print
+                      </button>
+                    </div>
+                  </div>
+
+                  <div class="card-body p-0">
+                    <div class="table-responsive">
+                      <table class="table table-hover mb-0" id="subjectsTable">
+                        <thead class="table-light">
+                          <tr>
+                            <th>#</th>
+                            <th>Code</th>
+                            <th>Subject Name</th>
+                            <th>Class</th>
+                            <th>Section</th>
+                            <th>Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody id="subjectsTableBody">
+                          <!-- Populated by JS -->
+                        </tbody>
+                      </table>
+                    </div>
+
+                    <!-- Empty state -->
+                    <div
+                      id="emptyState"
+                      class="text-center py-5"
+                      style="display: none"
+                    >
+                      <i class="fas fa-book fa-3x text-muted mb-2"></i>
+                      <h5 class="text-muted">No subjects found</h5>
+                      <p class="text-muted">
+                        Try selecting different classes or sections
+                      </p>
+                    </div>
+
+                    <!-- Loading state -->
+                    <div
+                      id="loadingState"
+                      class="text-center py-5"
+                      style="display: none"
+                    >
+                      <div
+                        class="spinner-border text-primary mb-3"
+                        role="status"
+                      ></div>
+                      <h5 class="text-muted">Loading subjects...</h5>
+                    </div>
+
+                    <div class="p-3 border-top d-flex justify-content-between">
+                      <small class="text-muted" id="resultCount"
+                        >Showing 0 subjects</small
+                      >
+                    </div>
+                  </div>
+                </div>
+                <div
+                  class="modal fade"
+                  id="subjectDetailsModal"
+                  tabindex="-1"
+                  aria-hidden="true"
+                >
+                  <div class="modal-dialog modal-dialog-centered modal-lg">
+                    <div class="modal-content">
+                      <div class="modal-header bg-primary text-white">
+                        <h5 class="modal-title" id="subjectModalTitle">
+                          Subject Details
+                        </h5>
+                        <button
+                          type="button"
+                          class="btn-close btn-close-white"
+                          data-bs-dismiss="modal"
+                          aria-label="Close"
+                        ></button>
+                      </div>
+                      <div class="modal-body" id="subjectModalBody">
+                        Loading subject details...
+                      </div>
+                      <div class="modal-footer">
+                        <button
+                          type="button"
+                          class="btn btn-secondary"
+                          data-bs-dismiss="modal"
+                        >
+                          Close
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>

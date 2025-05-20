@@ -96,7 +96,13 @@ const loadteacherform = async (req, res) => {
       selectedClassIds,
       selectedSectionIds,
       selectedSubjectIds,
-      teacherId
+      teacherId,
+      title: "Teacher Management",
+      header: "Teacher Setup",
+      headerIcon: "fas fa-user-graduate",
+      buttons: [
+        { text: "Teacher List", href: "/teachers/teacher-list", color: "red", icon: "fas fa-users" },
+      ]
     });
   } catch (error) {
     console.error("Error loading teacher form:", error);
@@ -228,6 +234,11 @@ const addorupdateteacher = async (req, res) => {
 
 const loadteacherlist = async (req, res) => {
   try {
+    const success = req.flash("success")[0];
+    const error = req.flash("error")[0];
+    const oldInput = req.flash("oldInput")[0] || {};
+    const errorFields = req.flash("errorFields")[0] || [];
+
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
     const offset = (page - 1) * limit;
@@ -249,12 +260,10 @@ const loadteacherlist = async (req, res) => {
       order: [["createdAt", "DESC"]],
     });
 
-    // Fetch all classes, sections, subjects for mapping
     const allClasses = await ClasList.findAll();
     const allSections = await Section.findAll();
     const allSubjects = await Subject.findAll();
 
-    // Map for fast lookup
     const classMap = Object.fromEntries(allClasses.map(cls => [cls.id.toString(), cls.class_name]));
     const sectionMap = Object.fromEntries(allSections.map(sec => [sec.id.toString(), sec.section_name]));
     const subjectMap = Object.fromEntries(allSubjects.map(sub => [sub.id.toString(), sub.name]));
@@ -277,10 +286,6 @@ const loadteacherlist = async (req, res) => {
     });
 
     const totalPages = Math.ceil(count / limit);
-    const success = req.session.success || "";
-    const error = req.session.error || "";
-    req.session.success = null;
-    req.session.error = null;
 
     res.render("teachers/teacherlist", {
       teacherlist: formattedTeachers,
@@ -300,14 +305,23 @@ const loadteacherlist = async (req, res) => {
         endEntry: Math.min(offset + limit, count),
       },
       success,
-      error
+      error,
+      oldInput,
+      errorFields,
+      title: "Teacher Management",
+      header: "Teacher Setup",
+      headerIcon: "fas fa-user-graduate",
+      buttons: [
+        { text: "Add Teacher", href: "/teachers/teacher-form", color: "red", icon: "fas fa-user-plus" },
+      ]
     });
-  } catch (error) {
-    console.error("Error loading teacher list:", error);
-    req.session.error = "Failed to load teacher list.";
+  } catch (err) {
+    console.error("Error loading teacher list:", err);
+    req.flash("error", "Failed to load teacher list.");
     res.redirect("/teachers/teacher-list");
   }
 };
+
 
 
 const getSectionsByClasses = async (req, res) => {

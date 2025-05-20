@@ -3,7 +3,7 @@ document.addEventListener('DOMContentLoaded', function () {
   const sectionContainer = document.getElementById('sectionContainer');
   const subjectContainer = document.getElementById('subjectContainer');
   const isEditMode = window.location.search.includes('teacherId');
-  
+
   // Get pre-selected values from hidden inputs or data attributes
   const oldClassIds = JSON.parse(document.getElementById('oldClassIds')?.value || '[]');
   const oldSectionIds = JSON.parse(document.getElementById('oldSectionIds')?.value || '[]');
@@ -64,27 +64,27 @@ document.addEventListener('DOMContentLoaded', function () {
         let colorIndex = 0;
         let currentClassId = null;
 
-// Group sections by class_id
-const sectionMap = new Map();
-sections.forEach(section => {
-  if (!sectionMap.has(section.class_id)) {
-    sectionMap.set(section.class_id, []);
-  }
-  sectionMap.get(section.class_id).push(section);
-});
+        // Group sections by class_id
+        const sectionMap = new Map();
+        sections.forEach(section => {
+          if (!sectionMap.has(section.class_id)) {
+            sectionMap.set(section.class_id, []);
+          }
+          sectionMap.get(section.class_id).push(section);
+        });
 
-// Generate HTML
-sectionMap.forEach((sectionList, classId) => {
-  const classObj = selectedClasses.find(cls => cls.id == classId);
-  const className = classObj ? classObj.name : 'Unknown Class';
-  const bgColorClass = classColors[colorIndex % classColors.length];
+        // Generate HTML
+        sectionMap.forEach((sectionList, classId) => {
+          const classObj = selectedClasses.find(cls => cls.id == classId);
+          const className = classObj ? classObj.name : 'Unknown Class';
+          const bgColorClass = classColors[colorIndex % classColors.length];
 
-  html += `<h6 class="p-2 rounded-2 text-white ${bgColorClass}">${className}</h6>`;
-  html += `<div class="flex flex-wrap gap-3 mb-4 border p-3 rounded shadow-sm text-xl bg-white">`; 
+          html += `<h6 class="p-2 rounded-2 text-white ${bgColorClass}">${className}</h6>`;
+          html += `<div class="flex flex-wrap gap-3 mb-4 border p-3 rounded shadow-sm text-xl bg-white">`;
 
-  sectionList.forEach(section => {
-    const isChecked = oldSectionIds.includes(section.id.toString());
-    html += `
+          sectionList.forEach(section => {
+            const isChecked = oldSectionIds.includes(section.id.toString());
+            html += `
       <div class="form-check min-w-[20px] ">
         <label class="form-check-label cursor-pointer flex items-center space-x-2">
           <input type="checkbox" 
@@ -96,11 +96,11 @@ sectionMap.forEach((sectionList, classId) => {
         </label>
       </div>
     `;
-  });
+          });
 
-  html += `</div>`; // Close horizontal container
-  colorIndex++;
-});
+          html += `</div>`; // Close horizontal container
+          colorIndex++;
+        });
 
 
 
@@ -150,9 +150,9 @@ sectionMap.forEach((sectionList, classId) => {
       const response = await fetch('/teachers/get-subjects', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          classIds: selectedClassIds, 
-          sectionIds: selectedSectionIds 
+        body: JSON.stringify({
+          classIds: selectedClassIds,
+          sectionIds: selectedSectionIds
         }),
       });
 
@@ -191,7 +191,7 @@ sectionMap.forEach((sectionList, classId) => {
 
 
 
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
   const imageUpload = document.getElementById('teacherImageUpload');
   const imagePreview = document.getElementById('imagePreview');
   const imagePreviewContainer = document.getElementById('imagePreviewContainer');
@@ -201,10 +201,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
   // Handle file selection
   if (imageUpload) {
-    imageUpload.addEventListener('change', function(e) {
+    imageUpload.addEventListener('change', function (e) {
       if (this.files && this.files[0]) {
         const file = this.files[0];
-        
+
         // Validate file type
         const validTypes = ['image/jpeg', 'image/png', 'image/jpg'];
         if (!validTypes.includes(file.type)) {
@@ -212,52 +212,52 @@ document.addEventListener('DOMContentLoaded', function() {
           this.value = '';
           return;
         }
-        
+
         // Validate file size (2MB max)
         if (file.size > 2 * 1024 * 1024) {
           alert('Image size should be less than 2MB');
           this.value = '';
           return;
         }
-        
+
         const reader = new FileReader();
-        
-        reader.onload = function(e) {
+
+        reader.onload = function (e) {
           imagePreview.src = e.target.result;
           imagePreviewContainer.style.display = 'block';
-          
+
           // Hide current image if exists
           if (currentTeacherImage) {
             currentTeacherImage.style.display = 'none';
           }
-          
+
           // Uncheck remove checkbox if checked
           if (removeImageCheckbox) {
             removeImageCheckbox.checked = false;
           }
         }
-        
+
         reader.readAsDataURL(file);
       }
     });
   }
-  
+
   // Handle remove preview button
   if (removePreviewBtn) {
-    removePreviewBtn.addEventListener('click', function() {
+    removePreviewBtn.addEventListener('click', function () {
       imageUpload.value = '';
       imagePreviewContainer.style.display = 'none';
-      
+
       // Show current image again if exists
       if (currentTeacherImage) {
         currentTeacherImage.style.display = 'block';
       }
     });
   }
-  
+
   // Handle remove image checkbox
   if (removeImageCheckbox) {
-    removeImageCheckbox.addEventListener('change', function() {
+    removeImageCheckbox.addEventListener('change', function () {
       if (this.checked) {
         // Hide preview if showing
         imagePreviewContainer.style.display = 'none';

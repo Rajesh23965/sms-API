@@ -4,8 +4,8 @@ const { Op } = require('sequelize');
 module.exports = {
   //load form
   displayPromotionPage: async (req, res) => {
-    const error = req.flash('error') || "";
-    const success = req.flash('success') || "";
+    const error = req.flash('error')[0] || "";
+    const success = req.flash('success')[0] || "";
 
     try {
       // Fetch all classes and sections
@@ -156,7 +156,14 @@ module.exports = {
         classMap,
         sectionMap,
         error,
-        success
+        success,
+        title: "Students Promotion Management",
+        header: "Promotion Setup",
+        headerIcon: "fa-solid fa-arrow-up-right-dots",
+        buttons: [
+          { text: "Back", href: "/students/student-form", color: "red", icon: "fa-solid fa-backward" },
+
+        ]
       });
 
     } catch (error) {
@@ -238,7 +245,7 @@ module.exports = {
                 academic_year: nextAcademicYear,
                 class_id: nextClass.class_id,
                 section_id: history.section_id,
-                roll_number: history.roll_number, 
+                roll_number: history.roll_number,
                 status: 'promoted',
                 is_current: true,
                 promotion_date: new Date()
