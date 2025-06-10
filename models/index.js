@@ -7,7 +7,6 @@ const sequelize = new Sequelize(dbConfig.DB, dbConfig.USER, dbConfig.PASSWORD, {
   dialect: dbConfig.dialect,
   pool: dbConfig.pool,
 });
-
 const db = {};
 db.Sequelize = Sequelize;
 db.sequelize = sequelize;
@@ -39,9 +38,15 @@ db.subjectClass = require("./classModel/subjectClass")(sequelize, DataTypes);
 db.subjectTeacher = require("./classModel/subjectTeacher")(sequelize, DataTypes);
 db.student_academic_histories = require("./examManage/studentAcademicYear.js")(sequelize, DataTypes);
 db.terms = require("./examManage/terms.js")(sequelize, DataTypes);
-db.schoolinfo=require("./SchoolInfo/schoolModel.js")(sequelize,DataTypes);
-
-
+db.schoolinfo = require("./SchoolInfo/schoolModel.js")(sequelize, DataTypes);
+db.attendance = require("./attendanceManage/attendance.js")(sequelize, DataTypes);
+db.attendance_summary = require("./attendanceManage/attendance_summary.js")(sequelize, DataTypes);
+db.holidays_leaves = require("./attendanceManage/holidays_leaves.js")(sequelize, DataTypes);
+db.admins = require("./Admin/admins.js")(sequelize, DataTypes);
+db.role = require("./Role/rolemodel.js")(sequelize, DataTypes);
+db.home_layout = require("./Layout/home_layout.js")(sequelize, DataTypes);
+db.home_layout_url=require("./Layout/home_layout_url.js")(sequelize,DataTypes);
+db.home_layout_roles=require("./Layout/home_layout_role.js")(sequelize,DataTypes);
 // Setup associations
 require("./associations.js")(db);
 

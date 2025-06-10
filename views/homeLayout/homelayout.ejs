@@ -1,0 +1,203 @@
+<%- include('../layouts/header') %>
+
+    <div class="container-fluid mt-4">
+        <div class="card shadow-sm">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                <h4 class="mb-0">
+                    <%= currentLayout ? 'Edit' : 'Add' %> Home Layout
+                </h4>
+            </div>
+
+            <div class="card-body">
+                <form id="layoutForm" action="/home-layout/save" method="POST">
+                    <input type="hidden" name="id" value="<%= currentLayout ? currentLayout.id : '' %>">
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="title">Title</label>
+                                <input type="text" class="form-control" id="title" name="title"
+                                    value="<%= currentLayout ? currentLayout.title : '' %>" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="icon">Icon (Font Awesome class)</label>
+                                <input type="text" class="form-control" id="icon" name="icon"
+                                    value="<%= currentLayout ? currentLayout.icon : 'fas fa-circle' %>" required>
+                                <!-- <small class="text-muted">e.g. fas fa-home, fab fa-react</small> -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="parent_id">Parent Menu</label>
+                                <select class="form-control" id="parent_id" name="parent_id">
+                                    <option value="">-- No Parent --</option>
+                                    <% layouts.forEach(layout=> {
+                                        if (!currentLayout || layout.id !== currentLayout.id) { %>
+                                        <option value="<%= layout.id %>" <%=currentLayout &&
+                                            currentLayout.parent_id===layout.id ? 'selected' : '' %>>
+                                            <%= layout.title %>
+                                        </option>
+                                        <% }}); %>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="access_to">Access Role</label>
+                                <select class="form-control" id="access_to" name="access_to" required>
+                                    <% roles.forEach(role=> { %>
+                                        <option value="<%= role.id %>" <%=currentLayout &&
+                                            currentLayout.access_to===role.id ? 'selected' : '' %>>
+                                            <%= role.name %>
+                                        </option>
+                                        <% }); %>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label for="status">Status</label>
+                                <select class="form-control" id="status" name="status" required>
+                                    <option value="active" <%=currentLayout && currentLayout.status==='active'
+                                        ? 'selected' : '' %>>Active</option>
+                                    <option value="inactive" <%=currentLayout && currentLayout.status==='inactive'
+                                        ? 'selected' : '' %>>Inactive</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label for="order">Order</label>
+                                <input type="number" class="form-control" id="order" name="order"
+                                    value="<%= currentLayout ? currentLayout.order : 0 %>" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>URLs</label>
+                        <div id="urlContainer">
+                            <% if (currentLayout && currentLayout.urls && currentLayout.urls.length> 0) {
+                                currentLayout.urls.forEach((url, index) => { %>
+                                <div class="input-group mb-2 url-row">
+                                    <input type="text" class="form-control" name="urls[]" value="<%= url.url %>"
+                                        placeholder="Enter URL" required>
+                                    <div class="input-group-append">
+                                        <button class="btn btn-danger remove-url" type="button">
+                                            <i class="fas fa-times"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <% }); } else { %>
+                                    <div class="input-group mb-2 url-row">
+                                        <input type="text" class="form-control" name="urls[]" placeholder="Enter URL"
+                                            required>
+                                        <div class="input-group-append">
+                                            <button class="btn btn-danger remove-url" type="button">
+                                                <i class="fas fa-times"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                <% } %>
+                        </div>
+                        <button type="button" id="addUrl" class="btn btn-sm btn-secondary mb-4">
+                            <i class="fas fa-plus"></i> Add URL
+                        </button>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">
+                        <%= currentLayout ? 'Update' : 'Save' %>
+                    </button>
+                    <a href="/home-layout/form" class="btn  btn-danger">Reset</a>
+                </form>
+            </div>
+        </div>
+    </div>
+<!-- List of layouts -->
+    <div class="container-fluid mt-4">
+        <div class="card shadow-sm">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                <h4 class="mb-0">Home Layouts</h4>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-bordered table-hover" id="layoutsTable">
+                        <thead>
+                            <tr>
+                                <th>Title</th>
+                                <th>Icon</th>
+                                <th>Parent</th>
+                                <th>Role</th>
+                                <th>URLs</th>
+                                <th>Order</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% layouts.forEach(layout=> { %>
+                                <tr>
+                                    <td>
+                                        <%= layout.title %>
+                                    </td>
+                                    <td>
+                                        <%= layout.icon %>
+                                    </td>
+                                    <td>
+                                        <%= layout.parent ? layout.parent.title : '—' %>
+                                    </td>
+                                    <td>
+                                        <%= layout.roles ? layout.roles.name : '—' %>
+                                    </td>
+
+                                    <td>
+                                        <% if (layout.urls && layout.urls.length> 0) { %>
+                                            <ul class="list-unstyled">
+                                                <% layout.urls.forEach(url=> { %>
+                                                    <li>
+                                                        <%= url.url %>
+                                                    </li>
+                                                    <% }); %>
+                                            </ul>
+                                            <% } else { %>
+                                                --
+                                                <% } %>
+                                    </td>
+                                    <td>
+                                        <%= layout.order %>
+                                    </td>
+                                    <td>
+                                        <!-- <span class="badge badge-<%= layout.status === 'active' ? 'success' : 'danger' %>">
+                                             
+                                            </span> -->
+                                        <%= layout.status %>
+                                    </td>
+                                    <td>
+                                        <a href="/home-layout/edit/<%= layout.id %>" class="btn btn-sm btn-primary">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        <button class="btn btn-sm btn-danger delete-layout" data-id="<%= layout.id %>">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                <% }); %>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    </div>
+    </div>
+
+
+    <%- include('../layouts/footer') %>

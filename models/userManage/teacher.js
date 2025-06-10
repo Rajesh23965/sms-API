@@ -10,16 +10,16 @@ module.exports = (sequelize, DataTypes) => {
       qualification:{type: DataTypes.STRING(100)},
       address:{type: DataTypes.TEXT},
       class_id: {
-        type: DataTypes.TEXT,
+        type: DataTypes.INTEGER,
         allowNull: true,
         references: {
           model: "classes",
           key: "id",
         },
       },
-      section_id: DataTypes.TEXT,
+      section_id: DataTypes.INTEGER,
       subject_id: {
-        type: DataTypes.TEXT,
+        type: DataTypes.INTEGER,
         allowNull: true,
       },
       school_id: {

@@ -507,3 +507,134 @@ body {
   }
 }
 }
+
+
+
+
+
+/* Add to your stylesheet */
+.bulk-mark-input {
+  width: 70px !important;
+  text-align: center;
+}
+
+.input-group-sm .input-group-text {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+}
+
+.input-group-sm .form-control {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+  height: calc(1.5em + 0.5rem + 2px);
+}
+
+
+
+
+/* Popup Result modal css */
+
+  .marksheet-container {
+    padding: 20px;
+    background-color: white;
+    position: relative;
+  }
+  
+  .marksheet-border {
+    border: 2px solid #333;
+    padding: 15px;
+    position: relative;
+  }
+  
+  .marksheet-header {
+    text-align: center;
+    margin-bottom: 20px;
+  }
+  
+  .school-name {
+    font-size: 1.5rem;
+    font-weight: bold;
+    margin-bottom: 5px;
+  }
+  
+  .school-address {
+    font-size: 0.9rem;
+    margin-bottom: 5px;
+  }
+  
+  .marksheet-title {
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: #4682B4;
+    margin: 15px 0;
+  }
+  
+  .student-info-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+  
+  .info-label {
+    font-weight: bold;
+  }
+  
+  .subject-table {
+    width: 100%;
+    margin-bottom: 20px;
+    border-collapse: collapse;
+  }
+  
+  .subject-table th {
+    background-color: #333;
+    color: white;
+    text-align: center;
+    padding: 8px;
+    font-weight: bold;
+  }
+  
+  .subject-table td {
+    padding: 8px;
+    border: 1px solid #ddd;
+    text-align: center;
+  }
+  
+  .subject-table tr:nth-child(even) {
+    background-color: #f9f9f9;
+  }
+  
+  .summary-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 15px;
+    margin-bottom: 30px;
+  }
+  
+  .signature-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 30px;
+    margin-top: 40px;
+  }
+  
+  .signature-line {
+    border-top: 1px solid #333;
+    width: 80%;
+    margin-top: 25px;
+  }
+  
+  .footer-text {
+    font-size: 0.8rem;
+    color: #666;
+    margin-top: 30px;
+    text-align: center;
+  }
+  
+  .text-pass {
+    color: #28a745;
+  }
+  
+  .text-fail {
+    color: #dc3545;
+  }
