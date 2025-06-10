@@ -51,7 +51,6 @@ $(document).ready(function () {
     if (classId) {
       $sectionSelect.prop('disabled', false);
 
-      console.log('Sending classId:', classId);
 
       $.ajax({
         url: `/results/api/sections-by-class?class_id=${classId}`,
@@ -76,8 +75,6 @@ $(document).ready(function () {
       $sectionSelect.prop('disabled', true);
     }
   });
-
-
 
 
   // Load Class Results
@@ -140,25 +137,175 @@ $(document).ready(function () {
     downloadClassResultsCSV(currentClassResults);
   });
 
-  // Print
-  $(document).on('click', '#printClassResultsBtn', function () {
-    window.print();
-  });
-  // View individual student result
+  //view button click handler
   $(document).on('click', '.view-individual-result', function () {
     const admissionNo = $(this).data('admissionno');
-    const examTypeId = currentClassResults.exam.id;
-    const academicYear = $('#classAcademicYear').val();
+    const studentResult = currentClassResults.results.find(r =>
+      r.student.admissionNo === admissionNo
+    );
 
-    $('#admissionNoInput').val(admissionNo);
-    $('#examTypeSelect').val(examTypeId);
-    $('#academicYearSelect').val(academicYear);
-    $('#searchStudentBtn').click();
-    $('#individual-tab').tab('show');
+    if (studentResult) {
+      displayMarksheetInModal(studentResult);
+      $('#marksheetModal').modal('show');
+    }
   });
 
+  // Popup Marksheet
 
-  // Display Class Results
+  function displayMarksheetInModal(response) {
+    const marksheetPreview = $('#marksheetPreview');
+    marksheetPreview.empty();
+
+    // Create the marksheet HTML structure
+    const marksheetHTML = `
+    <div class="marksheet-border">
+      <!-- Header Section -->
+      <div class="marksheet-header">
+        ${response.school.logo ?
+        `<img src="${response.school.logo.startsWith('http') ? response.school.logo :
+          'http://localhost:5001/uploads/school/' + response.school.logo.split('/').pop()}" 
+            style="height: 60px; float: left; margin-right: 15px;">` : ''
+      }
+        
+        <div class="school-name">${response.school.name.toUpperCase()}</div>
+        <div class="school-address">${response.school.address}</div>
+        ${response.school.affiliation ?
+        `<div class="school-affiliation" style="font-style: italic; font-size: 0.8rem;">
+            Affiliated to: ${response.school.affiliation}
+          </div>` : ''
+      }
+        
+        ${response.student.image ?
+        `<img src="${response.student.image.startsWith('http') ? response.student.image :
+          'http://localhost:5001/uploads/students/' + response.student.image.split('/').pop()}" 
+            style="height: 60px; float: right;">` : ''
+      }
+        
+        <div style="clear: both;"></div>
+        
+        <div class="marksheet-title">ACADEMIC REPORT CARD</div>
+        <div style="font-size: 0.9rem; font-style: italic;">
+          Academic Year: ${response.student.academicYear} | ${response.exam.name} Examination
+        </div>
+      </div>
+      
+      <!-- Student Information -->
+      <div class="student-info-grid">
+        <div><span class="info-label">Admission No:</span> ${response.student.admissionNo}</div>
+        <div><span class="info-label">Date of Birth:</span> ${response.student.dob ? new Date(response.student.dob).toLocaleDateString() : 'N/A'}</div>
+        <div><span class="info-label">Student Name:</span> ${response.student.name}</div>
+        <div><span class="info-label">Class:</span> ${response.student.class} (${response.student.section})</div>
+      </div>
+      
+      <!-- Subjects Table -->
+      <table class="subject-table">
+        <thead>
+          <tr>
+            <th>Subject</th>
+            <th>Code</th>
+            <th>Theory</th>
+            <th>Practical</th>
+            <th>Total</th>
+            <th>Grade</th>
+            <th>Remarks</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${response.subjects.map(subject => `
+            <tr>
+              <td>${subject.name}</td>
+              <td>${subject.code}</td>
+              <td>${subject.marks || '-'}</td>
+              <td>${subject.practicalMarks || '-'}</td>
+              <td>${subject.totalMarks || '-'}</td>
+              <td>${subject.grade || '-'}</td>
+              <td class="${subject.status === 'Pass' ? 'text-pass' : 'text-fail'}">
+                ${subject.status}
+              </td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+      
+      <!-- Summary Section -->
+      <div class="summary-grid">
+        <div><span class="info-label">Total Marks:</span> ${response.summary.totalMarks}</div>
+        <div><span class="info-label">Percentage:</span> ${response.summary.overallPercentage}%</div>
+        <div><span class="info-label">CGPA:</span> ${response.summary.cgpa}</div>
+        <div><span class="info-label">Result Status:</span> 
+          <span class="${response.summary.overallStatus === 'Pass' ? 'text-pass' : 'text-fail'}">
+            ${response.summary.overallStatus}
+          </span>
+        </div>
+      </div>
+
+
+
+
+      <div class="text-bold font-bold">Note:</div>
+      <div class="flex flex-col">
+          <div>
+            <div class="">Abs = Absent</div>
+          </div>
+          <div>
+            <div class="">Exp = Expelled</div>
+          </div>
+          <div>
+            <div class="">NQ = Not Qualified</div>
+          </div>
+          <div>
+            <div class="">WH = Withheld</div>
+          </div>
+            <div>
+            <div class="">F* = Fail in Practical</div>
+          </div>
+          <div>
+            <div class="">F** = Fail in Theory & Practical</div>
+          </div>
+      </div>
+
+      
+      <!-- Signatures -->
+      <div class="signature-grid">
+        <div>
+          <div>Checked By:</div>
+          <div class="signature-line"></div>
+          <div style="font-size: 0.8rem;">(Subject Teacher)</div>
+        </div>
+        <div>
+          <div>Class Teacher:</div>
+          <div class="signature-line"></div>
+          <div style="font-size: 0.8rem;">(Signature)</div>
+        </div>
+        <div>
+          <div>Principal:</div>
+          <div class="signature-line"></div>
+          <div style="font-size: 0.8rem;">(Seal & Signature)</div>
+        </div>
+        <div>
+          <div>Date:</div>
+          <div class="signature-line"></div>
+          <div style="font-size: 0.8rem;">${new Date().toLocaleDateString()}</div>
+        </div>
+      </div>
+      
+      <!-- Footer -->
+      <div class="footer-text">
+        <div>Generated on: ${new Date().toLocaleString()}</div>
+        <div>This is a computer generated document. No signature required.</div>
+      </div>
+    </div>
+  `;
+
+    marksheetPreview.html(marksheetHTML);
+
+    // Set up download button
+    $('#downloadMarksheetBtn').off('click').on('click', function () {
+      downloadIndividualMarksheet(response);
+    });
+  }
+
+
   function displayClassResults(response) {
     const container = $('#classResultsContainer');
     const table = $('#classResultsTable tbody');
@@ -208,50 +355,6 @@ $(document).ready(function () {
 
 
 
-
-
-
-
-  // Download Class Results as PDF
-  function downloadClassResultsPDF(response) {
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
-
-    // Header
-    doc.setFontSize(18).setFont('helvetica', 'bold');
-    doc.text('SCHOOL NAME', 148, 15, { align: 'center' });
-    doc.setFontSize(14).setFont('helvetica', 'normal');
-    doc.text('CLASS RESULTS', 148, 22, { align: 'center' });
-    doc.text(`${response.class} - ${response.section} | ${response.exam.name}`, 148, 28, { align: 'center' });
-
-    // Prepare table data
-    const headers = ['S.N.', 'Student Name', 'Admission No', 'Total Marks', 'Percentage', 'CGPA', 'Status',];
-    const rows = response.results.map((result, index) => [
-      index + 1,
-      result.student.name,
-      result.student.admissionNo,
-      result.summary.totalMarks,
-      result.summary.overallPercentage + '%',
-      result.summary.cgpa,
-      result.summary.overallStatus,
-    ]);
-
-    // Create table
-    doc.autoTable({
-      startY: 35,
-      head: [headers],
-      body: rows,
-      headStyles: { fillColor: [41, 128, 185], textColor: 255, fontStyle: 'bold' },
-      margin: { left: 10 }
-    });
-
-    // Footer
-    doc.setFontSize(10)
-      .text(`Generated on: ${new Date().toLocaleDateString()}`, 148, doc.lastAutoTable.finalY + 10, { align: 'center' });
-
-    doc.save(`${response.class}_${response.section || 'AllSections'}_${response.exam.name.replace(/\s+/g, '_')}_Results.pdf`);
-  }
-
   // Download Class Results as CSV
   function downloadClassResultsCSV(response) {
     let csvContent = "data:text/csv;charset=utf-8,";
@@ -292,46 +395,6 @@ $(document).ready(function () {
   });
 
 
-  // Download All Individual Marksheets (ZIP)
-  $(document).off('click', '#downloadAllMarksheetsBtn').on('click', '#downloadAllMarksheetsBtn', function () {
-    if (!currentClassResults) {
-      alert('No class results available to download');
-      return;
-    }
-
-    // Show processing message
-    const btn = $(this);
-    const originalHtml = btn.html();
-    btn.html('<i class="fas fa-spinner fa-spin"></i> Preparing...');
-    btn.prop('disabled', true);
-
-    // Create zip file with all marksheets
-    const zip = new JSZip();
-    const folder = zip.folder(`${currentClassResults.class}_${currentClassResults.section}_Results`);
-
-    // Process each student result
-    const promises = currentClassResults.results.map(result => {
-      return generateIndividualMarksheetPDF(result).output('blob').then(blob => {
-        const filename = `${result.student.name.replace(/\s+/g, '_')}_Result.pdf`;
-        folder.file(filename, blob);
-      });
-    });
-
-
-    // Generate and download zip
-    Promise.all(promises).then(() => {
-      zip.generateAsync({ type: 'blob' }).then(content => {
-        saveAs(content, `${currentClassResults.class}_${currentClassResults.section}_Individual_Results.zip`);
-        btn.html(originalHtml);
-        btn.prop('disabled', false);
-      });
-    });
-  });
-
-  // Print Class Results
-  $('#printClassResultsBtn').click(function () {
-    window.print();
-  });
 });
 
 
@@ -565,10 +628,10 @@ async function downloadIndividualMarksheet(response) {
     subject: subject.name,
     code: subject.code,
     theory: subject.marks || "-",
-    practical: subject.practicalMarks || "-",
-    total: subject.totalMarks,
-    grade: subject.grade,
-    remarks: subject.remarks || ""
+    practical: subject.practicalMar || "-",
+    total: subject.totalMarks || "-",
+    grade: subject.grade || "-",
+    remarks: subject.status || ""
   }));
 
   // Add table with alternating row colors
@@ -629,41 +692,77 @@ async function downloadIndividualMarksheet(response) {
     addText(item.label, x, y, { fontStyle: 'bold' });
     addText(item.value.toString(), x + 30, y);
 
-    // Highlight result status
-    if (item.label === "Result Status:") {
-      const statusColor = item.value.toLowerCase() === "pass" ? [0, 128, 0] : colors.accent;
-      addText(item.value, x + 35, y, { color: statusColor, fontStyle: 'bold' });
-    }
   });
 
 
+
   const staticFieldsY = doc.lastAutoTable.finalY + 30;
-  const fieldSpacing = 60;
-  const signatureY = staticFieldsY + 15;
+  const baseX = margin;
+  let currentY = staticFieldsY;
+  const itemsPerRow = 2;
+  // 1. Draw "Note:" Heading
+  addText("Note:", baseX, currentY, { fontStyle: 'bold' });
+  currentY += 7;
 
-  // Checked By
-  addText("Checked By:", margin, signatureY);
-  doc.line(margin + 20, signatureY + 1, margin + 70, signatureY + 1);
-  addText("(Subject Teacher)", margin, signatureY + 5, { fontSize: styles.tiny.fontSize });
+  const noteItem = [
+    "Abs = Absent",
+    "Exp = Expelled",
+    "NQ = Not Qualified",
+    "WH = Withheld",
+    "F* = Fail in Practical",
+    "F** = Fail in Theory & Practical",
+  ];
 
-  // Class Teacher
-  addText("Class Teacher:", margin + fieldSpacing, signatureY);
-  doc.line(margin + fieldSpacing + 25, signatureY + 1, margin + fieldSpacing + 75, signatureY + 1);
-  addText("(Signature)", margin + fieldSpacing, signatureY + 5, { fontSize: styles.tiny.fontSize });
+  noteItem.forEach((label) => {
+    addText(label, baseX + 1, currentY);
+    currentY += 7;
+  });
 
-  // Principal
-  addText("Principal:", margin + 2 * fieldSpacing, signatureY);
-  doc.line(margin + 2 * fieldSpacing + 20, signatureY + 1, margin + 2 * fieldSpacing + 70, signatureY + 1);
-  addText("(Seal & Signature)", margin + 2 * fieldSpacing, signatureY + 5, { fontSize: styles.tiny.fontSize });
 
-  // Date
-  const currentDate = new Date().toLocaleDateString();
-  addText("Date:", pageWidth - margin - 50, signatureY);
-  doc.line(pageWidth - margin - 40, signatureY + 1, pageWidth - margin, signatureY + 1);
-  addText(currentDate, pageWidth - margin - 30, signatureY + 5, { fontSize: styles.tiny.fontSize });
+
+  const items = [
+    {
+      label: "Checked By:",
+      lineOffset: 20,
+      lineLength: 50,
+      subLabel: "(Subject Teacher)",
+    },
+    {
+      label: "Class Teacher:",
+      lineOffset: 25,
+      lineLength: 50,
+      subLabel: "(Signature)",
+    },
+    {
+      label: "Principal:",
+      lineOffset: 20,
+      lineLength: 50,
+      subLabel: "(Seal & Signature)",
+    },
+    {
+      label: "Date:",
+      lineOffset: 10,
+      lineLength: 50,
+      subLabel: new Date().toLocaleDateString(),
+    },
+  ];
+
+  items.forEach((item, index) => {
+    const rowIndex = Math.floor(index / itemsPerRow);
+    const colIndex = index % itemsPerRow;
+    const fieldSpacing = 100;
+    const colSpacing = fieldSpacing;
+    const baseX = margin;
+    const x = baseX + colIndex * colSpacing;
+    const y = currentY + rowIndex * 15;
+
+    addText(item.label, x, y);
+    doc.line(x + item.lineOffset, y + 1, x + item.lineOffset + item.lineLength, y + 1);
+    addText(item.subLabel, x, y + 5, { fontSize: styles.tiny.fontSize });
+  });
 
   // Footer (Static with dynamic generation date)
-  const footerY = pageHeight - 10;
+  const footerY = pageHeight - 15;
   addText(`Generated on: ${new Date().toLocaleString()}`, margin, footerY, {
     fontSize: styles.tiny.fontSize,
     color: [100, 100, 100]
@@ -680,20 +779,336 @@ async function downloadIndividualMarksheet(response) {
     .setLineWidth(0.5)
     .rect(margin - 5, margin - 5, pageWidth - margin * 2 + 10, pageHeight - margin * 2 + 10);
 
-  // Watermark (Conditional static element)
-  if (response.summary.overallStatus.toLowerCase() === "fail") {
-    doc.setFontSize(60)
-      .setTextColor(200, 0, 0, 20)
-      .setFont("helvetica", "bold")
-      .text("FAILED", pageWidth / 2, pageHeight / 2, {
-        align: "center",
-        angle: 45
-      });
-  }
+
 
   // Save PDF
   doc.save(`${response.student.name.replace(/ /g, "_")}_${response.exam.name.replace(/ /g, "_")}_Marksheet.pdf`);
 }
+
+
+
+// Class Result PDF
+async function downloadClassResultsPDF(response) {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({
+    orientation: "portrait",
+    unit: "mm",
+    format: "a4",
+  });
+
+  // Constants
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+  const margin = 15;
+  const logoSize = 20;
+
+
+  // Styles
+  const styles = {
+    header1: { fontSize: 18, fontStyle: "bold", lineHeight: 1.2 },
+    header2: { fontSize: 14, fontStyle: "bold", lineHeight: 1.2 },
+    normal: { fontSize: 11, lineHeight: 1.2 },
+    small: { fontSize: 9, lineHeight: 1.2 },
+    tiny: { fontSize: 8, lineHeight: 1.1 }
+  };
+
+  // Colors
+  const colors = {
+    primary: [51, 51, 51],
+    secondary: [70, 130, 180],
+    accent: [220, 53, 69],
+    lightBg: [240, 240, 240]
+  };
+
+  // Helper function to add text with optional styling
+  const addText = (text, x, y, options = {}) => {
+    const { fontSize = styles.normal.fontSize, fontStyle = 'normal', align = 'left', color = [0, 0, 0] } = options;
+    doc.setFontSize(fontSize)
+      .setFont("helvetica", fontStyle)
+      .setTextColor(...color)
+      .text(text, x, y, { align });
+  };
+  // Process each student's result
+  response.results.forEach((result, index) => {
+    if (index > 0) doc.addPage();
+    let yPos = 16;
+
+
+
+    // School Logo
+    if (result.school?.logo) {
+      try {
+        let logoPath = result.school.logo;
+        if (!logoPath.startsWith('http')) {
+          logoPath = `http://localhost:5001/uploads/school/${logoPath.split('/').pop()}`;
+        }
+        const img = new Image();
+        img.src = logoPath;
+        doc.addImage(img, 'JPEG', margin, yPos, logoSize, logoSize);
+      } catch (e) {
+        console.error("Error loading school logo:", e);
+      }
+    }
+
+    // School Information
+    addText(result.school?.name?.toUpperCase(), pageWidth / 2, yPos + 10, {
+      fontSize: styles.header1.fontSize,
+      fontStyle: 'bold',
+      align: 'center'
+    });
+
+    addText(result.school?.address, pageWidth / 2, yPos + 16, {
+      align: 'center',
+      fontSize: styles.small.fontSize
+    });
+
+    if (result.school?.affiliation) {
+      addText(`Affiliated to: ${result.school.affiliation}`, pageWidth / 2, yPos + 21, {
+        align: 'center',
+        fontSize: styles.small.fontSize,
+        fontStyle: 'italic'
+      });
+    }
+
+    // Student Photo
+    if (result.student?.image) {
+      try {
+        let studentImgPath = result.student.image;
+        if (!studentImgPath.startsWith('http')) {
+          studentImgPath = `http://localhost:5001/uploads/students/${studentImgPath.split('/').pop()}`;
+        }
+        const img = new Image();
+        img.src = studentImgPath;
+        doc.addImage(img, 'JPEG', pageWidth - margin - logoSize, yPos, logoSize, logoSize);
+      } catch (e) {
+        console.error("Error loading student image:", e);
+      }
+    }
+
+    yPos += 30;
+
+    // Marksheet Title
+    addText("ACADEMIC REPORT CARD", pageWidth / 2, yPos, {
+      fontSize: styles.header2.fontSize,
+      fontStyle: 'bold',
+      align: 'center',
+      color: colors.secondary
+    });
+
+    addText(`Academic Year: ${result.student?.academicYear} | ${result.exam?.name} Examination`, pageWidth / 2, yPos + 6, {
+      fontSize: styles.small.fontSize,
+      align: 'center',
+      fontStyle: 'italic'
+    });
+
+    yPos += 15;
+
+    // Student Information
+    const studentInfo = [
+      { label: "Admission No", value: result.student?.admissionNo || "N/A" },
+      { label: "Date of Birth", value: result.student?.dob ? new Date(result.student.dob).toLocaleDateString() : "N/A" },
+      { label: "Student Name", value: result.student?.name || "N/A" },
+      { label: "Class", value: `${result.student?.class || "N/A"} (${result.student?.section || "N/A"})` },
+    ];
+
+    const infoCol1Width = 40;
+    const infoCol2Width = 40;
+    const infoRowHeight = 8;
+
+    studentInfo.forEach((info, index) => {
+      const col = index % 2;
+      const row = Math.floor(index / 2);
+      const x = margin + (col * (infoCol1Width + infoCol2Width + 6));
+      const y = yPos + (row * infoRowHeight);
+
+      addText(info.label + ":", x, y, { fontStyle: 'bold' });
+      addText(info.value, x + infoCol1Width, y);
+    });
+
+    yPos += 20;
+
+    // Result Table (ORIGINAL TABLE STRUCTURE - NOT CHANGED)
+    // const tableHeaders = [["S.N.", "Subject", "FM", "PM", "Prac", "Obt(W)", "Obt(P)", "Total", "%", "Grade", "Point", "Status"]];
+    // const tableBody = result.subjects.map((s, i) => [
+    //   i + 1,
+    //   s.name,
+    //   s.fullMarks,
+    //   s.passMarks,
+    //   s.practicalMarks || "-",
+    //   s.marks || "-",
+    //   s.practicalMar || "-",
+    //   s.totalMarks || "-",
+    //   s.percentage || "-",
+    //   s.grade || "-",
+    //   s.gradePoint || "-",
+    //   s.status || "-"
+    // ]);
+    const tableHeaders = [
+      { header: "Subject", dataKey: "subject", width: 35 },
+      { header: "Code", dataKey: "code", width: 35 },
+      { header: "Theory", dataKey: "theory", width: 20 },
+      { header: "Practical", dataKey: "practical", width: 25 },
+      { header: "Total", dataKey: "total", width: 20 },
+      { header: "Grade", dataKey: "grade", width: 20 },
+      { header: "Remarks", dataKey: "remarks", width: 25 }
+    ];
+
+    const tableBody = result.subjects.map((s) => [
+      s.name,
+      s.code,
+      s.marks || "-",
+      s.practicalMar || "-",
+      s.totalMarks || "-",
+      s.grade || "-",
+      s.status || ""
+    ])
+
+    doc.autoTable({
+      startY: yPos,
+      head: [tableHeaders.map(col => col.header)],
+      body: tableBody,
+      margin: { left: margin, right: margin },
+      styles: { fontSize: 8 },
+      headStyles: {
+        fillColor: colors.primary,
+        textColor: 255,
+        fontStyle: "bold",
+        halign: "center"
+      },
+      theme: "grid",
+      bodyStyles: {
+        halign: "center"
+      },
+      alternateRowStyles: {
+        fillColor: colors.lightBg
+      },
+      margin: { left: margin, right: margin },
+
+    });
+
+    // Summary Section (ORIGINAL STRUCTURE - NOT CHANGED)
+    const summaryY = doc.lastAutoTable.finalY + 10;
+    const summary = result.summary || {};
+    const summaryData = [
+      { label: "Total Marks", value: `${summary.totalMarks || "N/A"} / ${summary.totalFullMarks || "N/A"}` },
+      { label: "Percentage", value: `${summary.overallPercentage || "N/A"}%` },
+      { label: "CGPA", value: summary.cgpa || "N/A" },
+      { label: "Result Status:", value: summary.overallStatus }
+
+      // { label: "Result", value: summary.overallStatus || "N/A" },
+      // { label: "Percentile", value: summary.percentile || "N/A" }
+    ];
+    const summaryColWidth = 60;
+    summaryData.forEach((item, index) => {
+      const col = index % 3;
+      const row = Math.floor(index / 3);
+      const x = margin + (col * summaryColWidth);
+      const y = summaryY + (row * 8);
+
+      addText(item.label, x, y, { fontStyle: 'bold' });
+      addText(item.value.toString(), x + 30, y);
+
+    });
+
+
+
+    const staticFieldsY = doc.lastAutoTable.finalY + 30;
+    const fieldSpacing = 100;
+    const signatureY = staticFieldsY + 15;
+    const baseX = margin;
+    let currentY = staticFieldsY;
+    const itemsPerRow = 2;
+    const rowSpacing = 10;
+    const colSpacing = fieldSpacing;
+
+    let rowIndex = 0;
+    let colIndex = 0;
+    // 1. Draw "Note:" Heading
+    addText("Note:", baseX, currentY, { fontStyle: 'bold' });
+    currentY += 7;
+
+    const noteItem = [
+      "Abs = Absent",
+      "Exp = Expelled",
+      "NQ = Not Qualified",
+      "WH = Withheld",
+      "F* = Fail in Practical",
+      "F** = Fail in Theory & Practical",
+    ];
+
+    noteItem.forEach((label) => {
+      addText(label, baseX + 1, currentY);
+      currentY += 7;
+    });
+
+    yPos += 30;
+    // Signature Section
+    const items = [
+      {
+        label: "Checked By:",
+        lineOffset: 20,
+        lineLength: 50,
+        subLabel: "(Subject Teacher)",
+      },
+      {
+        label: "Class Teacher:",
+        lineOffset: 25,
+        lineLength: 50,
+        subLabel: "(Signature)",
+      },
+      {
+        label: "Principal:",
+        lineOffset: 20,
+        lineLength: 50,
+        subLabel: "(Seal & Signature)",
+      },
+      {
+        label: "Date:",
+        lineOffset: 10,
+        lineLength: 50,
+        subLabel: new Date().toLocaleDateString(),
+      },
+    ];
+
+    items.forEach((item, index) => {
+      const rowIndex = Math.floor(index / itemsPerRow);
+      const colIndex = index % itemsPerRow;
+      const fieldSpacing = 100;
+      const colSpacing = fieldSpacing;
+      const baseX = margin;
+      const x = baseX + colIndex * colSpacing;
+      const y = currentY + rowIndex * 15;
+
+      addText(item.label, x, y);
+      doc.line(x + item.lineOffset, y + 1, x + item.lineOffset + item.lineLength, y + 1);
+      addText(item.subLabel, x, y + 5, { fontSize: styles.tiny.fontSize });
+    });
+
+
+
+    // Footer
+    const footerY = pageHeight - 15;
+    addText(`Generated on: ${new Date().toLocaleString()}`, margin, footerY, {
+      fontSize: styles.tiny.fontSize,
+      color: [100, 100, 100]
+    });
+
+    addText("This is a computer generated document. No signature required.", pageWidth / 2, footerY, {
+      align: "center",
+      fontSize: styles.tiny.fontSize,
+      color: [100, 100, 100]
+    });
+
+    // Border
+    doc.setDrawColor(150)
+      .setLineWidth(0.5)
+      .rect(margin - 5, margin - 5, pageWidth - margin * 2 + 10, pageHeight - margin * 2 + 10);
+  });
+
+  // Save PDF
+  doc.save(`Class_${response.class}_Results.pdf`);
+}
+
 
 // Helper function to load images
 async function loadImage(url) {
@@ -705,58 +1120,3 @@ async function loadImage(url) {
     img.src = url;
   });
 }
-
-
-//Class Result PDF
-
-function downloadClassResultsPDF(response) {
-  const { jsPDF } = window.jspdf;
-  const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
-
-  // Header
-  doc.setFontSize(18).setFont('helvetica', 'bold');
-  doc.text('SCHOOL/COLLEGE NAME', 148, 15, { align: 'center' });
-  doc.setFontSize(14).setFont('helvetica', 'normal');
-  doc.text('CLASS RESULTS', 148, 22, { align: 'center' });
-  doc.text(`${response.class} - ${response.section} | ${response.exam.name}`, 148, 28, { align: 'center' });
-
-  // Prepare table data
-  const headers = ['S.N.', 'Student Name', 'Admission No', 'Total Marks', 'CGPA', 'Status'];
-  if (response.results.length > 0) {
-    response.results[0].subjects.forEach(subj => {
-      headers.push(subj.name, 'Grade');
-    });
-  }
-
-  const rows = response.results.map((result, index) => {
-    const row = [
-      index + 1,
-      result.student.name,
-      result.student.admissionNo,
-      result.summary.totalMarks,
-      result.summary.cgpa,
-      result.summary.overallStatus
-    ];
-    result.subjects.forEach(subj => {
-      row.push(`${subj.marks}/${subj.fullMarks}`, subj.grade);
-    });
-    return row;
-  });
-
-  // Create table
-  doc.autoTable({
-    startY: 35,
-    head: [headers],
-    body: rows,
-    headStyles: { fillColor: [41, 128, 185], textColor: 255, fontStyle: 'bold' },
-    margin: { left: 10 }
-  });
-
-  // Footer
-  doc.setFontSize(10)
-    .text(`Generated on: ${new Date().toLocaleDateString()}`, 148, doc.lastAutoTable.finalY + 10, { align: 'center' });
-
-  doc.save(`${response.class}_${response.section}_${response.exam.name.replace(/\s+/g, '_')}_Results.pdf`);
-}
-
-

@@ -2,10 +2,11 @@
 const express = require("express");
 const router = express.Router();
 const resultController = require("../../controllers/ResultController/resultController");
+const { authMiddleware } = require("../../middleware/authMiddleware");
 
-router.get("/results", resultController.loadResult);
-router.get("/api/student-result", resultController.searchStudentResult);
-router.get("/api/class-results", resultController.getClassResults);
-router.get('/api/sections-by-class', resultController.getSectionsByClass);
+router.get("/results", authMiddleware, resultController.loadResult);
+router.get("/api/student-result", authMiddleware, resultController.searchStudentResult);
+router.get("/api/class-results", authMiddleware, resultController.getClassResults);
+router.get('/api/sections-by-class', authMiddleware, resultController.getSectionsByClass);
 
 module.exports = router;

@@ -22,6 +22,10 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.DATEONLY,
         allowNull: false,
       },
+      dob_nepali: {
+        type: DataTypes.STRING(100), 
+        allowNull: true,
+      },
       phone: {
         type: DataTypes.STRING(20),
         allowNull: false,
@@ -35,7 +39,7 @@ module.exports = (sequelize, DataTypes) => {
         },
       },
       image: {
-        type: DataTypes.TEXT,
+        type: DataTypes.STRING(100),
         allowNull: true,
       },
       // Permanent address

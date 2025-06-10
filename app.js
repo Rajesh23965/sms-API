@@ -3,11 +3,18 @@ const session = require("express-session");
 const flash = require("connect-flash");
 const cors = require("cors");
 const path = require("path");
+const cookieParser = require("cookie-parser");
 const initRoutes = require("./routes/initRoutes");
+const layoutMiddleware = require("./middleware/layoutMiddleware");
+const { authMiddleware } = require("./middleware/authMiddleware");
+const authenticate = require("./middleware/auth");
 require("dotenv").config();
 
 const app = express();
-
+//dynamic sidebar
+app.use(cookieParser());
+app.use(authenticate);
+app.use(layoutMiddleware);
 app.use(cors());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
@@ -42,9 +49,11 @@ app.use((req, res, next) => {
 initRoutes(app);
 
 // Dashboard route
-app.get("/", (req, res) => {
+app.get("/", authMiddleware, (req, res) => {
   res.render("dashboard");
 });
+
+
 
 // 404 handler
 app.use((req, res) => {

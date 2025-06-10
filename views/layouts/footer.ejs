@@ -1,4 +1,3 @@
-
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="/js/student.js"></script>
 <script src="/js/location.js"></script>
@@ -11,6 +10,8 @@
 <script src="/js/class.js"></script>
 <script src="/js/result.js"></script>
 <script src="/js/school.js"></script>
+<script src="/js/admin.js"></script>
+<script src="/js/layout.js"></script>
 <!-- jsPDF UMD -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
@@ -33,10 +34,28 @@
     var el = document.getElementById(id);
     el.style.display = el.style.display === 'none' || el.style.display === '' ? 'block' : 'none';
   }
-  
+
 </script>
-
-
+<script>
+  function logout() {
+    fetch('/login/logout', {
+      method: 'POST',
+      credentials: 'include',
+    })
+      .then(res => {
+        if (res.redirected) {
+          window.location.href = res.url;
+        } else {
+          alert('Logout failed');
+        }
+      })
+      .catch(err => {
+        console.error("Logout error:", err);
+        alert('Logout error in browser');
+      });
+  }
+</script>
 </div>
 </body>
+
 </html>

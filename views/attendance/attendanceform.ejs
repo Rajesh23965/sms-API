@@ -1,0 +1,206 @@
+<%- include('../layouts/header', { title: 'Mark Attendance' }) %>
+
+<div class="card shadow-sm mb-4">
+    <div class="card-header bg-primary text-white">
+        <h5 class="mb-0">Mark Attendance</h5>
+    </div>
+    <div class="card-body">
+        <form id="attendanceForm">
+            <div class="row mb-3">
+                <div class="col-md-4">
+                    <label for="classSelect" class="form-label">Class</label>
+                    <select class="form-select" id="classSelect" required>
+                        <option value="">Select Class</option>
+                        {{#each formData.classes}}
+                            <option value="{{this.id}}">{{this.class_name}}</option>
+                        {{/each}}
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label for="sectionSelect" class="form-label">Section</label>
+                    <select class="form-select" id="sectionSelect" required disabled>
+                        <option value="">Select Section</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label for="dateInput" class="form-label">Date</label>
+                    <input type="date" class="form-control" id="dateInput" value="{{formData.today}}" required>
+                </div>
+            </div>
+            <div class="alert alert-info">
+                <i class="bi bi-info-circle-fill"></i> Today's holidays: <strong>{{formData.holidays}}</strong>
+            </div>
+            <button type="button" id="fetchStudentsBtn" class="btn btn-primary">
+                <i class="bi bi-people-fill"></i> Fetch Students
+            </button>
+        </form>
+    </div>
+</div>
+
+<div id="studentsContainer" class="d-none">
+    <div class="card shadow-sm">
+        <div class="card-header bg-success text-white">
+            <h5 class="mb-0">Student Attendance</h5>
+        </div>
+        <div class="card-body">
+            <form id="markAttendanceForm">
+                <div class="table-responsive">
+                    <table class="table table-hover table-bordered">
+                        <thead class="table-light">
+                            <tr>
+                                <th width="5%">S.N.</th>
+                                <th width="10%">Roll No.</th>
+                                <th width="15%">Admission No.</th>
+                                <th>Student Name</th>
+                                <th width="15%">Status</th>
+                                <th width="20%">Remarks</th>
+                            </tr>
+                        </thead>
+                        <tbody id="studentsList">
+                            <!-- Students will be loaded here via AJAX -->
+                        </tbody>
+                    </table>
+                </div>
+                <button type="submit" class="btn btn-success">
+                    <i class="bi bi-check-circle-fill"></i> Submit Attendance
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Populate sections when class is selected
+    document.getElementById('classSelect').addEventListener('change', function() {
+        const classId = this.value;
+        const sectionSelect = document.getElementById('sectionSelect');
+        
+        if (!classId) {
+            sectionSelect.innerHTML = '<option value="">Select Section</option>';
+            sectionSelect.disabled = true;
+            return;
+        }
+        
+        // Find the selected class
+        const selectedClass = formData.classes.find(c => c.id == classId);
+        
+        if (selectedClass && selectedClass.sections) {
+            sectionSelect.innerHTML = '<option value="">Select Section</option>' + 
+                selectedClass.sections.map(s => 
+                    `<option value="${s.id}">${s.section_name}</option>`
+                ).join('');
+            sectionSelect.disabled = false;
+        }
+    });
+    
+    // Fetch students when button is clicked
+    document.getElementById('fetchStudentsBtn').addEventListener('click', function() {
+        const classId = document.getElementById('classSelect').value;
+        const sectionId = document.getElementById('sectionSelect').value;
+        const date = document.getElementById('dateInput').value;
+        
+        if (!classId || !sectionId || !date) {
+            alert('Please select class, section and date');
+            return;
+        }
+        
+        fetch(`/attendance/students?class_id=${classId}&section_id=${sectionId}&date=${date}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.isHoliday) {
+                    alert(data.message);
+                    return;
+                }
+                
+                const container = document.getElementById('studentsContainer');
+                const tbody = document.getElementById('studentsList');
+                
+                if (data.students.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="6" class="text-center">No students found</td></tr>';
+                } else {
+                    tbody.innerHTML = data.students.map((student, index) => `
+                        <tr>
+                            <td>${index + 1}</td>
+                            <td>${student.roll_number}</td>
+                            <td>${student.admission_no}</td>
+                            <td>${student.name}</td>
+                            <td>
+                                <select name="status" class="form-select form-select-sm" required 
+                                    data-student-id="${student.student_id}">
+                                    <option value="present" ${student.existing_status === 'present' ? 'selected' : ''}>Present</option>
+                                    <option value="absent" ${student.existing_status === 'absent' ? 'selected' : ''}>Absent</option>
+                                    <option value="late" ${student.existing_status === 'late' ? 'selected' : ''}>Late</option>
+                                    <option value="half_day" ${student.existing_status === 'half_day' ? 'selected' : ''}>Half Day</option>
+                                    <option value="sick" ${student.existing_status === 'sick' ? 'selected' : ''}>Sick</option>
+                                    <option value="excused" ${student.existing_status === 'excused' ? 'selected' : ''}>Excused</option>
+                                </select>
+                                <input type="hidden" name="student_id" value="${student.student_id}">
+                                <input type="hidden" name="academic_history_id" value="${student.academic_history_id}">
+                            </td>
+                            <td>
+                                <input type="text" name="remark" class="form-control form-control-sm" 
+                                    value="${student.existing_remark || ''}" 
+                                    placeholder="Optional remark">
+                            </td>
+                        </tr>
+                    `).join('');
+                }
+                
+                container.classList.remove('d-none');
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Failed to fetch students');
+            });
+    });
+    
+    // Submit attendance form
+    document.getElementById('markAttendanceForm')?.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const classId = document.getElementById('classSelect').value;
+        const sectionId = document.getElementById('sectionSelect').value;
+        const date = document.getElementById('dateInput').value;
+        const students = Array.from(document.querySelectorAll('tr[data-student-id]')).map(row => {
+            return {
+                student_id: row.querySelector('input[name="student_id"]').value,
+                academic_history_id: row.querySelector('input[name="academic_history_id"]').value,
+                status: row.querySelector('select[name="status"]').value,
+                remark: row.querySelector('input[name="remark"]').value
+            };
+        });
+        
+        fetch('/attendance/mark', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                class_id: classId,
+                section_id: sectionId,
+                date: date,
+                attendances: students
+            })
+        })
+        .then(response => {
+            if (response.redirected) {
+                window.location.href = response.url;
+            } else {
+                return response.json();
+            }
+        })
+        .then(data => {
+            if (data?.error) {
+                alert(data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Failed to submit attendance');
+        });
+    });
+});
+</script>
+
+<%- include('../layouts/footer') %>

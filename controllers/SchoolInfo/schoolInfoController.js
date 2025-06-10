@@ -47,7 +47,13 @@ const loadSchoolInfoForm = async (req, res) => {
             success,
             error,
             oldInput,
-            errorFields
+            errorFields,
+            title: "School Info",
+            header: "School Setup",
+            headerIcon: "fas fa-school",
+            buttons: [
+                { text: "School Info", href: "/school/school-form", color: "red", icon: "fas fa-users" },
+            ]
         });
 
     } catch (error) {

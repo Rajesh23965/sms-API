@@ -6,7 +6,7 @@ const Teacher = db.teachers;
 const ClasList = db.classes;
 const Subject = db.subjects;
 const Section = db.sections;
-const SubjectClass = db.subjectClass
+const SubjectClass = db.subjectClass;
 
 const loadteacherform = async (req, res) => {
   try {
@@ -208,7 +208,7 @@ const addorupdateteacher = async (req, res) => {
         if (teacher.image) {
           const oldImagePath = path.join(__dirname, '../../public/uploads/teachers', teacher.image);
           if (fs.existsSync(oldImagePath)) {
-            fs.unlinkSync(oldImagePath); // Delete old image
+            fs.unlinkSync(oldImagePath);
           }
         }
         teacherPayload.image = req.file.filename;
@@ -269,20 +269,17 @@ const loadteacherlist = async (req, res) => {
     const subjectMap = Object.fromEntries(allSubjects.map(sub => [sub.id.toString(), sub.name]));
 
     const formattedTeachers = teacherlist.map(teacher => {
-      const classIds = teacher.class_id?.split(",") || [];
-      const sectionIds = teacher.section_id?.split(",") || [];
-      const subjectIds = teacher.subject_id?.split(",") || [];
-
-      const classNames = classIds.map(id => classMap[id] || 'Unknown').join(", ");
-      const sectionNames = sectionIds.map(id => sectionMap[id] || 'Unknown').join(", ");
-      const subjectNames = subjectIds.map(id => subjectMap[id] || 'Unknown').join(", ");
+      const className = classMap[teacher.class_id?.toString()] || 'Unknown';
+      const sectionName = sectionMap[teacher.section_id?.toString()] || 'Unknown';
+      const subjectName = subjectMap[teacher.subject_id?.toString()] || 'Unknown';
 
       return {
         ...teacher.toJSON(),
-        classNames,
-        sectionNames,
-        subjectNames
+        classNames: className,
+        sectionNames: sectionName,
+        subjectNames: subjectName,
       };
+
     });
 
     const totalPages = Math.ceil(count / limit);

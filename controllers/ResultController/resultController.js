@@ -10,7 +10,8 @@ const calculateGrade = (percentage) => {
   if (percentage >= 60) return { grade: 'B', point: 2.8 };
   if (percentage >= 50) return { grade: 'C+', point: 2.4 };
   if (percentage >= 40) return { grade: 'C', point: 2.0 };
-  return { grade: 'D', point: 0.0 };
+  if (percentage >= 40) return { grade: 'D', point: 1.6 };
+  return { grade: 'N/A', point: 0.0 };
 };
 
 const calculateCGPA = (subjects) => {
@@ -55,7 +56,7 @@ const loadResult = async (req, res) => {
       headerIcon: "fa-solid fa-square-poll-vertical",
       buttons: [
         { text: "Refresh", href: "/results/results", color: "red", icon: "fa-solid fa-rotate" },
-      
+
       ]
     });
   } catch (error) {
@@ -70,6 +71,7 @@ const searchStudentResult = async (req, res) => {
   if (!admissionNo || !examTypeId || !academicYear) {
     return res.status(400).json({ message: "Admission number, exam type ID and academic year are required." });
   }
+
 
   try {
     const schoolInfo = await db.schoolinfo.findOne();
@@ -116,70 +118,66 @@ const searchStudentResult = async (req, res) => {
       });
     }
 
+    // Get all subjects for the class with their codes
+    const classSubjects = await db.subjectCode.findAll({
+      where: {
+        class_id: academicHistory.class_id
+      },
+      include: [
+        {
+          model: db.subjects,
+          as: 'subject',
+          attributes: ['id', 'name', 'fullmarks', 'passmarks', 'practicalMarks']
+        }
+      ],
+      raw: true,
+      nest: true
+    });
 
-
-    // Get exam results for this student
     const examResults = await db.examResults.findAll({
       where: {
         exam_id: examTypeId,
         student_id: academicHistory.student_id,
         academic_year: academicYear,
         class_id: academicHistory.class_id,
-        section_id: academicHistory.section_id
+        section_id: academicHistory.section_id,
       },
-      include: [{
-        model: db.subjectCode,
-        as: 'subjectCodeRef',
-        include: [
-          {
-            model: db.subjects,
-            as: 'subject',
-            attributes: ['id', 'name', "fullmarks", "passmarks", "practicalMarks"]
-          }
-        ]
-      }],
+
       raw: true,
       nest: true
     });
 
-
-    if (!examResults.length) {
-      return res.status(404).json({
-        error: "No results found for this student in the specified exam",
-        details: {
-          admissionNo,
-          examTypeId,
-          academicYear,
-          classId: academicHistory.class_id,
-          sectionId: academicHistory.section_id
-        }
-      });
-    }
+    const resultMap = {};
+    examResults.forEach(result => {
+      resultMap[result.subject_code] = result;
+    });
 
 
-    // Process results
-    const subjects = examResults.map(result => {
-      // Use marks_obtained instead of marks
-      const marks = result.marks_obtained;
-      const practicalMar = result.practical_marks;
+    const subjects = classSubjects.map(subjectItem => {
+      const result = resultMap[subjectItem.code] || {};
+
+      const marks = result.marks_obtained ?? 0;
+      const practicalMar = result.practical_marks ?? 0;
       const totalMarksObtained = marks + practicalMar;
-      const subjectClass = result.subjectCodeRef?.subject;
-      const fullmarks = subjectClass?.fullmarks || 100;
-      const passmarks = subjectClass?.passmarks || 35;
-      const practicalMarks = subjectClass?.practicalMarks
+
+      const subject = subjectItem.subject;
+      const fullmarks = subject.fullmarks || 100;
+      const passmarks = subject.passmarks || 35;
+      const practicalMarks = subject.practicalMarks || 0;
       const percentage = (totalMarksObtained / fullmarks) * 100;
       const { grade, point } = calculateGrade(percentage);
 
-      const status = totalMarksObtained >= passmarks ? "Pass" : "Fail";
+      const status = result.marks_obtained != null ? (totalMarksObtained >= passmarks ? "Pass" : "Fail") : "Absent";
+
       return {
-        name: subjectClass?.name || 'Unknown Subject',
-        code: result.subject_code,
-        marks: marks,
-        practicalMar: practicalMar,
+        name: subject.name || 'Unknown Subject',
+        code: subjectItem.code,
+        marks,
+        practicalMar,
         totalMarks: totalMarksObtained,
         fullMarks: fullmarks,
         passMarks: passmarks,
-        practicalMarks: practicalMarks,
+        practicalMarks,
         percentage: percentage.toFixed(2),
         grade,
         gradePoint: point,
@@ -191,8 +189,18 @@ const searchStudentResult = async (req, res) => {
     const totalFullMarks = subjects.reduce((sum, subj) => sum + subj.fullMarks, 0);
     const overallPercentage = (totalMarks / totalFullMarks * 100).toFixed(2);
     const cgpa = calculateCGPA(subjects);
-    const overallStatus = subjects.every(subj => subj.status === "Pass") ? "Pass" : "Fail";
+    // const overallStatus = subjects.every(subj => subj.status === "Pass") ? "Pass" : "Fail";
+    let overallStatus;
 
+    if (subjects.every(subj => subj.status === "Pass")) {
+      overallStatus = "Pass";
+    } else if (subjects.some(subj => subj.status === "Fail")) {
+      overallStatus = "Fail";
+    } else if (subjects.some(subj => subj.status === "Not Appeared" || subj.status === "Absent")) {
+      overallStatus = "Absent";
+    } else {
+      overallStatus = "Pending";
+    }
     // Get exam details
     const exam = await db.exams.findOne({
       where: { id: examTypeId },
@@ -238,7 +246,7 @@ const searchStudentResult = async (req, res) => {
         overallStatus
       }
     };
-
+    console.log(subjects)
     res.json(response);
   } catch (error) {
     console.error("Error fetching student result:", error);
@@ -250,9 +258,8 @@ const searchStudentResult = async (req, res) => {
   }
 };
 
-
 const getClassResults = async (req, res) => {
-  const { classId, sectionId, examTypeId, academicYear } = req.query;
+  const { admissionNo, classId, sectionId, examTypeId, academicYear } = req.query;
 
   if (!classId || !examTypeId || !academicYear) {
     return res.status(400).json({
@@ -261,20 +268,35 @@ const getClassResults = async (req, res) => {
   }
 
   try {
-    // Get all students in the class/section for the academic year
+    const schoolInfo = await db.schoolinfo.findOne();
+
+    const exam = await db.exams.findOne({
+      where: { id: examTypeId },
+      include: [{
+        model: db.terms,
+        as: 'term',
+        attributes: ['start_date', 'end_date']
+      }]
+    });
     const students = await db.student_academic_histories.findAll({
       where: {
+        ...(admissionNo && { admission_no: admissionNo }),
         academic_year: academicYear,
-        class_id: classId,
-        ...(sectionId && { section_id: sectionId })
+        ...(classId && { class_id: classId }),
+        ...(sectionId && { section_id: sectionId }),
       },
       include: [
         {
           model: db.students,
           as: 'student',
+          attributes: ["id", "first_name", "middle_name", "last_name", "image", "fname", "dob"],
           where: { status: 'active' },
-          attributes: ["first_name", "middle_name", "last_name"],
-          required: true
+          required: true,
+          include: [{
+            model: db.schoolinfo,
+            as: 'school',
+            attributes: ['id', 'school_name', 'address', 'phone_number', 'email', 'logo']
+          }]
         },
         {
           model: db.classes,
@@ -290,13 +312,23 @@ const getClassResults = async (req, res) => {
     });
 
     if (!students.length) {
-      return res.status(404).json({
-        error: "No students found in the specified class/section",
-        details: { classId, sectionId, academicYear }
-      });
+      return res.status(404).json({ error: "No students found", details: { classId, sectionId, academicYear } });
     }
+    const classSubjects = await db.subjectCode.findAll({
+      where: {
+        class_id: classId
+      },
+      include: [
+        {
+          model: db.subjects,
+          as: 'subject',
+          attributes: ['id', 'name', 'fullmarks', 'passmarks', 'practicalMarks']
+        }
+      ],
+      raw: true,
+      nest: true
+    });
 
-    // Get exam results for all students
     const examResults = await db.examResults.findAll({
       where: {
         exam_id: examTypeId,
@@ -311,38 +343,42 @@ const getClassResults = async (req, res) => {
         include: [{
           model: db.subjects,
           as: 'subject',
-          attributes: ['name', "fullmarks", "passmarks"]
+          attributes: ['id', 'name', 'fullmarks', 'passmarks', 'practicalMarks']
         }]
       }]
     });
 
-    if (!examResults.length) {
-      return res.status(404).json({
-        error: "No exam results found for the specified criteria",
-        details: { classId, sectionId, examTypeId, academicYear }
-      });
-    }
-
-    // Process results for each student
     const results = students.map(student => {
       const studentResults = examResults.filter(er => er.student_id === student.student_id);
+      const resultMap = {};
+      studentResults.forEach(result => {
+        resultMap[result.subject_code] = result;
+      });
+      const subjects = classSubjects.map(subjectItem => {
+        const result = resultMap[subjectItem.code] || {};
+        const subject = subjectItem.subject;
 
-      const subjects = studentResults.map(result => {
-        const subjectClass = result.subjectCodeRef?.subject;
-        const fullmarks = subjectClass?.fullmarks || 0;
-        const passmarks = subjectClass?.passmarks || 0;
-        const obtainedMarks = result.marks_obtained || 0;
+        const marks = result.marks_obtained ?? 0;
+        const practicalMar = result.practical_marks ?? 0;
+        const totalMarksObtained = marks + practicalMar;
 
-        const percentage = fullmarks ? (obtainedMarks / fullmarks) * 100 : 0;
+        const fullmarks = subject.fullmarks || 100;
+        const passmarks = subject.passmarks || 35;
+        const practicalMarks = subject.practicalMarks || 0;
+        const percentage = (totalMarksObtained / fullmarks) * 100;
         const { grade, point } = calculateGrade(percentage);
-        const status = obtainedMarks >= passmarks ? "Pass" : "Fail";
+
+        const status = result.marks_obtained != null ? (totalMarksObtained >= passmarks ? "Pass" : "Fail") : "Absent";
 
         return {
-          name: result.subjectCodeRef?.subject?.name || 'Unknown Subject',
-          code: result.subject_code,
-          marks: obtainedMarks,
+          name: subject.name || 'Unknown Subject',
+          code: subjectItem.code,
+          marks,
+          practicalMar,
+          totalMarks: totalMarksObtained,
           fullMarks: fullmarks,
           passMarks: passmarks,
+          practicalMarks,
           percentage: percentage.toFixed(2),
           grade,
           gradePoint: point,
@@ -350,25 +386,44 @@ const getClassResults = async (req, res) => {
         };
       });
 
-      const totalMarks = subjects.reduce((sum, subj) => sum + subj.marks, 0);
+
+      const totalMarks = subjects.reduce((sum, subj) => sum + subj.totalMarks, 0);
       const totalFullMarks = subjects.reduce((sum, subj) => sum + subj.fullMarks, 0);
       const overallPercentage = totalFullMarks ? (totalMarks / totalFullMarks * 100).toFixed(2) : '0.00';
-
       const cgpa = totalMarks > 0 ? calculateCGPA(subjects) : '0.00';
-
       const overallStatus = totalMarks === 0 || subjects.some(subj => subj.status === "Fail") ? "Fail" : "Pass";
 
       return {
+        school: schoolInfo ? {
+          name: schoolInfo.school_name,
+          address: schoolInfo.address,
+          phone: schoolInfo.phone_number,
+          email: schoolInfo.email,
+          logo: schoolInfo.logo
+        } : null,
         student: {
-          id: student.id,
+          id: student.student.id,
           admissionNo: student.admission_no,
           name: `${student.student.first_name} ${student.student.middle_name || ''} ${student.student.last_name || ''}`.trim(),
-          class: student.class.class_name,
-          section: student.section.section_name,
+          class: student.class?.class_name || 'N/A',
+          section: student.section?.section_name || 'N/A',
+          image: student.student.image,
+          fname: student.student.fname,
+          dob: student.student.dob,
+          academicYear,
+        },
+        exam: {
+          id: exam.id,
+          name: exam.name,
+          term: {
+            start_date: exam.term?.start_date,
+            end_date: exam.term?.end_date
+          }
         },
         subjects,
         summary: {
           totalMarks,
+          totalFullMarks,
           overallPercentage,
           cgpa,
           overallStatus
@@ -376,8 +431,6 @@ const getClassResults = async (req, res) => {
       };
     });
 
-
-    // Calculate percentile for each student
     const allTotals = results.map(r => r.summary.totalMarks);
     const processedResults = results.map(result => ({
       ...result,
@@ -387,28 +440,31 @@ const getClassResults = async (req, res) => {
       }
     }));
 
-    // Get exam details
-    const exam = await db.exams.findByPk(examTypeId);
     const classInfo = await db.classes.findByPk(classId);
     const sectionInfo = sectionId ? await db.sections.findByPk(sectionId) : null;
 
-    res.json({
-      class: classInfo.class_name,
+    const response = {
+      class: classInfo?.class_name || 'N/A',
       section: sectionInfo?.section_name || "All Sections",
       exam: {
         id: exam.id,
         name: exam.name,
-        date: exam.start_date
+        term: {
+          start_date: exam.term?.start_date,
+          end_date: exam.term?.end_date
+        }
       },
       results: processedResults
-    });
+    }
+    console.log(response)
+    res.json(response);
   } catch (error) {
     console.error("Error getting class results:", error);
     res.status(500).json({ error: "Error getting class results" });
   }
 };
 
-// In your resultController.js (or equivalent controller file)
+
 const getSectionsByClass = async (req, res) => {
   try {
     const { class_id } = req.query;
@@ -419,11 +475,12 @@ const getSectionsByClass = async (req, res) => {
 
     const sectionData = await db.sections.findAll({
       where: { class_id },
-      // attributes: ['id', 'section_name'],
-      // order: [['section_name', 'ASC']]
+      attributes: ['id', 'section_name'],
+      order: [['section_name', 'ASC']],
     });
 
-    // console.log("Section========================", sectionData);
+
+
     res.status(200).json(sectionData);
   } catch (error) {
     console.error("Error fetching sections:", error);

@@ -1,122 +1,132 @@
 <%- include("../layouts/header")%>
-
-<% const buttons = [
-  { text: "Bulk Marks Entry", color: "blue", id: "bulkMarksBtn" },
-  { text: "Exam Type", color: "red", href: "/exams/exam-form-type" }
-]; %>
-
-<div class="container-fluid px-3 space-y-4">
-  <!-- Header -->
-  <div class="flex justify-between items-center bg-[#2a2a40] text-white rounded-md px-4 py-2 shadow">
-    <h3 class="text-xl font-semibold flex items-center gap-2">
-      <i class="fas fa-user-graduate"></i> Marks Entry
-    </h3>
-    <div class="flex gap-2">
-      <% buttons.forEach(button => { %>
-        <% if (button.href) { %>
-          <a href="<%= button.href %>" class="border border-<%= button.color %>-600 text-<%= button.color %>-600 hover:bg-<%= button.color %>-600 hover:text-white px-4 py-2 rounded transition duration-200">
-            <%= button.text %>
-          </a>
-        <% } else { %>
-          <button id="<%= button.id %>" class="border border-<%= button.color %>-600 text-<%= button.color %>-600 hover:bg-<%= button.color %>-600 hover:text-white px-4 py-2 rounded transition duration-200">
-            <%= button.text %>
-          </button>
-        <% } %>
-      <% }); %>
-    </div>
-  </div>
-
-  <!-- Sub-header -->
-  <div class="bg-green-600 text-white px-4 py-3 rounded shadow flex items-center gap-2">
-    <h3 class="text-xl font-semibold">Exam Setup</h3>
-  </div>
-
-  <!-- Card Body -->
-  <div class="card-body container-fluid px-3 border bg-white shadow-sm rounded">
-    <!-- Success Message -->
-    <% if (success) { %>
-      <div class="alert alert-success alert-dismissible fade show" role="alert">
-        <%= success %>
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-      </div>
-    <% } %>
-
-    <!-- Error Message -->
-    <% if (error && error !== "") { %>
-      <div class="alert alert-danger alert-dismissible fade show" role="alert">
-        <%= error %>
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-      </div>
-    <% } %>
-
-    <!-- Form -->
-    <form action="/exams/api/savemarks" method="post">
-      <div class="row mb-3 g-3">
-        <!-- Academic Year Dropdown -->
-        <div class="col-md-3">
-          <label class="form-label">Academic Year</label>
-          <select name="academicYear" class="form-select" id="academicYearSelect">
-            <option value="">Current Academic Year</option>
-            <% academicYears.forEach(year => { %>
-              <option value="<%= year %>"><%= year %></option>
-            <% }) %>
-          </select>
-        </div>
-
-        <!-- Exam Type Radio Buttons -->
-        <div class="col-md-12 d-flex flex-row gap-2 p-3 border mb-2 align-items-center">
-          <div class="fw-bold fs-6">Exam type:</div>
-          <% if (examTypeList && Array.isArray(examTypeList)) { %>
-            <% examTypeList.forEach(function(examType) { %>
-              <label class="md-3">
-                <input type="radio" name="examType" value="<%= examType.id %>" <% if (examTypeId && examTypeId == examType.id) { %> checked <% } %> >
-                <%= examType.name %>
-              </label>
-            <% }) %>
-          <% } %>
-        </div>
-      </div>
-
-      <!-- Student Marks Entry -->
-      <div class="row border p-3">
-        <!-- Registration Input + Marks Box -->
-        <div class="col-md-4">
-          <label class="d-flex gap-2 flex-column">
-            Registration number:
-            <input class="form-control" type="text" id="admissionno" />
-          </label>
-          <div class="studentMakrsBox p-2 d-flex flex-wrap flex-row gap-1 border mt-2"></div>
-          <button class="btn btn-outline-success my-2 w-100" type="button">Add</button>
-        </div>
-
-        <!-- Student Details -->
-        <div class="col-md-8 px-4">
-          <div class="border p-2 bg-light">
-            <h3 class="card-header bg-white px-0">Students Details:</h3>
-            <div class="studentDetails">
-              <span class="d-flex flex-row gap-2 my-2">
-                <h6 class="fw-bold">Admission Number:</h6>
-                <input class="form-control admissionNumber bg-transparent" type="text" name="admissionNumber" readonly />
-              </span>
-              <hr />
-              <table class="table table-bordered table-responsive">
-                <tr>
-                  <th>Student name:</th>
-                  <td class="studentName"></td>
-                  <th>Class:</th>
-                  <td class="studentClass"></td>
-                  <th>Section:</th>
-                  <td class="StudentSection"></td>
-                </tr>
-              </table>
-            </div>
+<div class="container-fluid">
+  <div class="row justify-content-center">
+    <div class="col-lg-12">
+      <div class="card shadow-lg rounded-0">
+        <div
+          class="card-header bg-dark-subtle text-capitalize d-flex justify-content-between align-items-center"
+        >
+          <h3><i class="fas fa-user-graduate me-2"></i>Marks Entry</h3>
+          <div>
+            <button class="btn btn-outline-primary me-2" id="bulkMarksBtn">
+              Bulk Marks Entry
+            </button>
+            <button
+              class="btn btn-outline-danger"
+              onclick="window.location.href='/exams/exam-form-type';"
+            >
+              Exam Type
+            </button>
           </div>
         </div>
+
+        <div class="card-body p-2 border">
+          <% if (success) { %>
+          <div
+            class="alert alert-success alert-dismissible fade show"
+            role="alert"
+          >
+            <%= success %>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="alert"
+              aria-label="Close"
+            ></button>
+          </div>
+          <% } %> <% if (error !="") { %>
+          <div
+            class="alert alert-danger alert-dismissible fade show"
+            role="alert"
+          >
+            <%= error %>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="alert"
+              aria-label="Close"
+            ></button>
+          </div>
+          <% } %>
+
+          <form action="/exams/api/savemarks" method="post">
+            <div class="row mb-3 g-3">
+              <div class="col-md-3">
+                <label class="form-label">Academic Year</label>
+                <select name="academicYear" class="form-select" id="academicYearSelect">
+                  <option value="">Current Academic Year</option>
+                  <% academicYears.forEach(year => { %>
+                    <option value="<%= year %>"><%= year %></option>
+                  <% }) %>
+                </select>
+              </div>
+              
+              <div class="col-md-12 d-flex flex-row gap-2 p-3 border mb-2 aliggn-items-center">
+                <div class="fw-bold fs-6">Exam type:</div>
+                <% if (examTypeList && Array.isArray(examTypeList)) { %> 
+                  <% examTypeList.forEach(function(examType) { %>
+                    <label class="md-3">
+                      <input type="radio" name="examType" value="<%= examType.id %>"
+                        <% if (examTypeId && examTypeId == examType.id) { %> checked <% } %> > 
+                      <%= examType.name %>
+                    </label>
+                  <% }) %> 
+                <% } %>
+              </div>
+            </div>
+            
+
+            <div
+              class="col-sm-12 col-md-12 col-lg-12 d-flex flex-row border p-3"
+            >
+              <div class="col-md-4">
+                <label for="" class="d-flex gap-2 flex-column">
+                  Registration number:
+                  <input class="form-control" type="text" id="admissionno" />
+                </label>
+                <div
+                  class="studentMakrsBox p-2 d-flex flex-wrap flex-row gap-1 border"
+                ></div>
+                <button class="btn btn-outline-success my-2 w-100">Add</button>
+              </div>
+              <div class="col-md-8 px-4">
+                <div class="border p-2">
+                  <h3 class="card-header carousel-dark px-0">
+                    Students Details:
+                  </h3>
+                  <div class="studentDetails">
+                    <span class="d-flex flex-row gap-2">
+                      <h6 class="fw-bold">Admission Number:</h6>
+
+                      <input
+                        class="form-control admissionNumber bg-transparent"
+                        type="text"
+                        id="admissionno"
+                        name="admissionNumber"
+                        readonly
+                      />
+                    </span>
+                    <hr />
+                    <table class="table table-responsive">
+                      <tr>
+                        <th>Student name:</th>
+                        <td class="studentName"></td>
+                        <th>Class:</th>
+                        <td class="studentClass"></td>
+                        <th>Section</th>
+                        <td class="StudentSection"></td>
+                      </tr>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </form>
+        </div>
       </div>
-    </form>
+    </div>
   </div>
 </div>
-
 
 <!--Bulk Marks Entry-->
 
@@ -188,9 +198,9 @@
         </div>
 
         <div id="bulkMarksTableContainer" class="d-none">
-          <div class="alert alert-info mt-2">
-            <i class="fas fa-info-circle me-2"></i>
-            Enter marks for all students. Blank fields will be ignored.
+          <div class="alert alert-info mt-2 ">
+            <i class="fas fa-info-circle me-2 text-danger"></i>
+            Enter marks for all students. Blank fields will be considered as absent.
           </div>
 
           <div

@@ -24,6 +24,7 @@ const loadsectionform = async (req, res) => {
             attributes: ['class_name'],
           },
         ],
+        // order:[['id','ASC']]
       });
     }
 

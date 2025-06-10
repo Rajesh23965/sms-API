@@ -12,7 +12,37 @@ const SubjectList = db.subjects
 const Terms = db.terms
 const StudentAcademicHistory = db.student_academic_histories
 
+function calculateGradeAndStatus(totalMarks, maxMarks) {
+  const percentage = (totalMarks / maxMarks) * 100;
 
+  let grade = 'F';
+  let isPassed = false;
+
+  if (percentage >= 90) {
+    grade = 'A+';
+    isPassed = true;
+  } else if (percentage >= 80) {
+    grade = 'A';
+    isPassed = true;
+  } else if (percentage >= 70) {
+    grade = 'B+';
+    isPassed = true;
+  } else if (percentage >= 60) {
+    grade = 'B';
+    isPassed = true;
+  } else if (percentage >= 50) {
+    grade = 'C+';
+    isPassed = true;
+  } else if (percentage >= 40) {
+    grade = 'C';
+    isPassed = true;
+  } else if (percentage >= 30) {
+    grade = 'D';
+    isPassed = true;
+  }
+
+  return { grade, isPassed };
+}
 
 //exam type functionality
 const loadExamTypeForm = async (req, res) => {
@@ -88,12 +118,16 @@ const loadExamTypeForm = async (req, res) => {
       currentTerm,
       academicYears,
       examTypes: ['weekly', 'monthly', 'terminal', 'final'],
-      title: "Academic Terms & Exams Management",
-      header: "Exam Type Setup",
-      headerIcon: "fas fa-calendar-alt",
+      title: "Exam Management",
+      header: "Exam Setup",
+      headerIcon: "fas fa-layer-group",
       buttons: [
-        { text: "Exam", href: "/exams/exam-form", color: "red", icon: "fas fa-clipboard" },
-        { text: "Refresh", href: "/exams/exam-form-type", color: "green", icon: "fa-solid fa-rotate" }
+        {
+          text: "Add Exam",
+          href: "/exams/exam-form",
+          color: "green",
+          icon: "fas fa-plus"
+        }
       ]
     });
 
@@ -326,26 +360,7 @@ const loadExamForm = async (req, res) => {
       error,
       success,
       examTypeId,
-      title: "Exam Management",
-      header: "Exam Setup",
-      headerIcon: "fas fa-clipboard",
-      buttons: [
-        {
-          text: "Exam Type",
-          href: "/exams/exam-form-type",
-          color: "red",
-          icon: "fas fa-users",
-        },
-        {
-          text: "Bulk Marks Entry",
-          href: "#bulkMarksModal", // link to modal ID
-          color: "blue",
-          icon: "fas fa-pen",
-          isModal: true,
-        },
-      ],
     });
-
   } catch (error) {
     console.error("Error loading exam form:", error);
 
@@ -740,38 +755,7 @@ const addstudentsMarks = async (req, res) => {
   }
 };
 
-// Helper function for grade calculation (customize according to your grading system)
-function calculateGradeAndStatus(totalMarks, maxMarks) {
-  const percentage = (totalMarks / maxMarks) * 100;
 
-  let grade = 'F';
-  let isPassed = false;
-
-  if (percentage >= 90) {
-    grade = 'A+';
-    isPassed = true;
-  } else if (percentage >= 80) {
-    grade = 'A';
-    isPassed = true;
-  } else if (percentage >= 70) {
-    grade = 'B+';
-    isPassed = true;
-  } else if (percentage >= 60) {
-    grade = 'B';
-    isPassed = true;
-  } else if (percentage >= 50) {
-    grade = 'C+';
-    isPassed = true;
-  } else if (percentage >= 40) {
-    grade = 'C';
-    isPassed = true;
-  } else if (percentage >= 30) {
-    grade = 'D';
-    isPassed = true;
-  }
-
-  return { grade, isPassed };
-}
 
 // Get bulk marks data
 const getBulkMarksData = async (req, res) => {
@@ -850,7 +834,6 @@ const getBulkMarksData = async (req, res) => {
     }
 
     // Format subjects data
-    // Format subjects data with no duplicates when section_id is not provided
     let subjects;
 
     if (section_id) {
@@ -894,8 +877,13 @@ const getBulkMarksData = async (req, res) => {
       if (!marksMap[mark.student_id]) {
         marksMap[mark.student_id] = {};
       }
-      marksMap[mark.student_id][mark.subject_code] = mark.marks_obtained;
+      marksMap[mark.student_id][mark.subject_code] = {
+        marks_obtained: mark.marks_obtained, practical_marks: mark.practical_marks,
+        grade: mark.grade,
+        is_passed: mark.is_passed
+      };
     });
+
 
     // Format response with students and their marks
     const students = studentHistories.map(history => ({
@@ -933,13 +921,39 @@ const saveBulkMarks = async (req, res) => {
     if (!Array.isArray(marks_data)) {
       return res.status(400).json({ error: "Invalid marks data format" });
     }
-
+    const subjectDetails = await db.subjectClass.findAll({
+      where: {
+        class_id,
+        section_id
+      },
+      include: [
+        {
+          model: db.subjectCode,
+          as: "subjectCode",
+          attributes: ['code']
+        },
+        {
+          model: db.subjects,
+          as: "subject",
+          attributes: ['id']
+        }
+      ]
+    });
+    const subjectInfoMap = {};
+    subjectDetails.forEach(subject => {
+      subjectInfoMap[subject.subjectCode.code] = {
+        id: subject.subject.id,
+        fullmarks: subject.fullmarks,
+        passmarks: subject.passmarks,
+        practical_fullmarks: subject.practical_fullmarks || 0,
+        practical_passmarks: subject.practical_passmarks || 0
+      };
+    });
     const now = new Date();
     const marksToSave = [];
     const marksToUpdate = [];
     const studentIds = marks_data.map(s => s.student_id);
 
-    // Get existing marks
     const existingMarks = await db.examResults.findAll({
       where: {
         exam_id,
@@ -948,91 +962,103 @@ const saveBulkMarks = async (req, res) => {
       }
     });
 
-    // Create existing marks map
     const existingMarksMap = {};
     existingMarks.forEach(mark => {
       const key = `${mark.student_id}_${mark.subject_code}`;
       existingMarksMap[key] = mark;
     });
 
-    // Get all unique subject codes from marks data
+    // Get unique subject codes
     const subjectCodes = [...new Set(
       marks_data.flatMap(s => Object.keys(s.marks))
     )];
 
-    // Get subject codes with their subject_ids
     const subjectCodeRecords = await db.subjectCode.findAll({
       where: {
         code: subjectCodes,
-        class_id: class_id
+        class_id
       },
       attributes: ['code', 'subject_id']
     });
 
-    // Create map of valid codes to subject IDs
     const validSubjectMap = {};
     subjectCodeRecords.forEach(sc => {
       validSubjectMap[sc.code] = sc.subject_id;
     });
 
-    // Validate all requested codes exist
     const invalidCodes = subjectCodes.filter(code => !validSubjectMap[code]);
     if (invalidCodes.length > 0) {
       return res.status(400).json({
         error: "Invalid subject codes",
         invalidCodes,
-        message: `The following subject codes are not valid for this class: ${invalidCodes.join(', ')}`
+        message: `These codes are not valid: ${invalidCodes.join(', ')}`
       });
     }
 
-    // Process each student's marks
-    marks_data.forEach(studentData => {
-      Object.entries(studentData.marks).forEach(([subject_code, marks]) => {
-        // Skip if marks are empty or not a number
-        if (marks === "" || marks === null || isNaN(marks)) return;
+    for (const student of marks_data) {
+      const studentId = student.student_id;
+      for (const [subject_code, marksObj] of Object.entries(student.marks)) {
+        const subjectInfo = subjectInfoMap[subject_code];
+        if (!subjectInfo) continue;
 
-        const numericMarks = parseFloat(marks);
-        const key = `${studentData.student_id}_${subject_code}`;
-        const markData = {
-          student_id: studentData.student_id,
+        let marks_obtained = null;
+        let practical_marks = null;
+
+        if (typeof marksObj === 'object') {
+          marks_obtained = parseFloat(marksObj.marks_obtained) || 0;
+          practical_marks = marksObj.practical_marks !== undefined ?
+            parseFloat(marksObj.practical_marks) || 0 :
+            null;
+        } else {
+          marks_obtained = parseFloat(marksObj) || 0;
+        }
+
+        // Calculate total marks
+        const totalMarks = marks_obtained + (practical_marks || 0);
+        const totalFullMarks = subjectInfo.fullmarks + subjectInfo.practical_fullmarks;
+
+        // Calculate grade and pass status
+        const { grade, isPassed } = calculateGradeAndStatus(
+          totalMarks,
+          totalFullMarks,
+          subjectInfo.passmarks + subjectInfo.practical_passmarks
+        );
+
+        const baseData = {
+          student_id: studentId,
           exam_id,
           subject_code,
-          subject_id: validSubjectMap[subject_code],
-          marks_obtained: numericMarks,
+          subject_id: subjectInfo.id,
+          marks_obtained,
+          practical_marks,
+          grade,
+          is_passed: isPassed,
           academic_year,
           class_id,
           section_id,
-          created_at: now,
           updated_at: now
         };
 
+
+
+        const key = `${studentId}_${subject_code}`;
+
         if (existingMarksMap[key]) {
-          marksToUpdate.push({
-            id: existingMarksMap[key].id,
-            data: markData
-          });
+          marksToUpdate.push({ id: existingMarksMap[key].id, data: baseData });
         } else {
-          marksToSave.push(markData);
+          baseData.created_at = now;
+          marksToSave.push(baseData);
         }
-      });
-    });
+      }
+    }
 
-    // Use transaction for atomic operations
-    await db.sequelize.transaction(async (t) => {
-      // Update existing marks
-      for (const mark of marksToUpdate) {
-        const { id, ...dataToUpdate } = mark;
-        await db.examResults.update(
-          dataToUpdate,
-          { where: { id }, transaction }
-        );
-
+    await db.sequelize.transaction(async (transaction) => {
+      for (const { id, data } of marksToUpdate) {
+        await db.examResults.update(data, { where: { id }, transaction });
       }
 
-
-      // Insert new marks
       if (marksToSave.length > 0) {
-        await db.examResults.bulkCreate(marksToSave, { transaction: t });
+        await db.examResults.bulkCreate(marksToSave, { transaction });
       }
     });
 
@@ -1054,6 +1080,8 @@ const saveBulkMarks = async (req, res) => {
     });
   }
 };
+
+
 // Get sections by class for dropdown
 const getSectionsByClass = async (req, res) => {
   try {

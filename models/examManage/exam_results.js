@@ -77,6 +77,7 @@ module.exports = (sequelize, DataTypes) => {
       timestamps: true,
       indexes: [
         {
+           name: 'uniq_exam_result_index',
           unique: false,
           fields: ['student_id', 'exam_id', 'subject_code', 'academic_year', 'class_id', 'subject_id']
         }

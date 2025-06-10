@@ -143,7 +143,7 @@ const loadSubjectForm = async (req, res) => {
                 {
                     text: "Add Subject",
                     href: "/subjects/subject-form",
-                    color: "green",
+                    color: "bg-primary",
                     icon: "fas fa-plus"
                 }
             ]

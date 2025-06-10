@@ -7,6 +7,8 @@ const Province = db.province;
 const Class = db.classes;
 const Section = db.sections;
 const StudentAcademicHistory = db.student_academic_histories
+const convertToNepaliDate = require("../../utils/dateConvert");
+const { adToBs } = require('@sbmdkl/nepali-date-converter');
 
 const loadStudentForm = async (req, res) => {
   const studentId = req.query.studentId;
@@ -62,7 +64,7 @@ const loadStudentForm = async (req, res) => {
 
         // Add database year to academicYears if it's different
         if (!academicYears.includes(currentAcademicYear)) {
-          academicYears.unshift(currentAcademicYear); // Add to beginning
+          academicYears.unshift(currentAcademicYear);
         }
       }
 
@@ -78,7 +80,7 @@ const loadStudentForm = async (req, res) => {
       studentId,
       error,
       success,
-      oldInput,
+      oldInput: Object.keys(oldInput).length ? oldInput : student,
       errorFields,
       provinces,
       classes,
@@ -91,8 +93,8 @@ const loadStudentForm = async (req, res) => {
       header: "Student Setup",
       headerIcon: "fas fa-user-graduate",
       buttons: [
-        { text: "Student List", href: "/students/student-list", color: "red",icon: "fas fa-users" },
-        { text: "Promotion", href: "/promotion", color: "green", icon: "fas fa-arrow-up-right-dots" }
+        { text: "Student List", href: "/students/student-list", color: "red", icon: "fas fa-users" },
+        { text: "Promotion", href: "/promotion", color: "bg-primary", icon: "fas fa-arrow-up-right-dots" }
       ]
     });
   } catch (error) {
@@ -110,21 +112,19 @@ const addOrUpdateStudent = async (req, res) => {
     redirectURL = studentId
       ? `/students/student-form?studentId=${studentId}`
       : "/students/student-form";
-    const academicYear = studentData.current_academic_year ||
-      `${new Date().getFullYear()}-${new Date().getFullYear() + 1}`;
 
+    const today = new Date();
+    const pad = (n) => n.toString().padStart(2, '0');
+    const formattedDate = `${today.getFullYear()}-${pad(today.getMonth() + 1)}-${pad(today.getDate())}`;
+    const bsDate = adToBs(formattedDate);
+    const academicYear = studentData.current_academic_year || bsDate.year.toString();
+    console.log("academicYear" + academicYear);
     const requiredFields = [
-      "first_name",
-      "last_name",
-      "gender",
-      "dob",
-      "phone",
-      "email",
-      "class_id",
-      "section_id",
+      "first_name", "last_name", "gender", "dob",
+      "phone", "email", "class_id", "section_id"
     ];
 
-    const missingFields = requiredFields.filter((field) => !studentData[field]);
+    const missingFields = requiredFields.filter(field => !studentData[field]);
     if (missingFields.length) {
       req.session.error = "All fields are required.";
       req.session.oldInput = studentData;
@@ -151,28 +151,26 @@ const addOrUpdateStudent = async (req, res) => {
       return res.redirect(redirectURL);
     }
 
+    const nepaliDob = convertToNepaliDate(studentData.dob);
+    studentData.dob_nepali = nepaliDob;
+
     let student;
-
-
     if (studentId) {
       student = await Student.findByPk(studentId);
       if (!student) {
         req.session.error = "Student not found.";
         return res.redirect(redirectURL);
       }
-      // Handle image deletion
-      if (studentData.delete_image === 'on') {
-        // Delete the old image file from server
-        if (student.image) {
-          const imagePath = path.join(__dirname, '../../public/uploads/students', student.image);
-          if (fs.existsSync(imagePath)) {
-            fs.unlinkSync(imagePath);
-          }
+
+      if (studentData.delete_image === 'on' && student.image) {
+        const imagePath = path.join(__dirname, '../../public/uploads/students', student.image);
+        if (fs.existsSync(imagePath)) {
+          fs.unlinkSync(imagePath);
         }
         studentData.image = null;
       }
+
       if (req.file) {
-        // Delete old image if exists
         if (student.image) {
           const oldImagePath = path.join(__dirname, '../../public/uploads/students', student.image);
           if (fs.existsSync(oldImagePath)) {
@@ -189,10 +187,7 @@ const addOrUpdateStudent = async (req, res) => {
       });
 
       let academicHistory = await StudentAcademicHistory.findOne({
-        where: {
-          student_id: student.id,
-          academic_year: academicYear
-        }
+        where: { student_id: student.id, academic_year: academicYear }
       });
 
       if (academicHistory) {
@@ -202,16 +197,15 @@ const addOrUpdateStudent = async (req, res) => {
           is_current: true
         });
       } else {
-        // Mark previous current record as not current
         await StudentAcademicHistory.update(
           { is_current: false },
           { where: { student_id: student.id, is_current: true } }
         );
 
-        // Create new academic history record
         await StudentAcademicHistory.create({
           student_id: student.id,
           admission_no: student.admission_no,
+
           academic_year: academicYear,
           class_id: studentData.class_id,
           section_id: studentData.section_id,
@@ -220,8 +214,6 @@ const addOrUpdateStudent = async (req, res) => {
           promotion_date: new Date()
         });
       }
-
-
 
     } else {
       const admission_no = await generateAdmissionNo();
@@ -232,7 +224,7 @@ const addOrUpdateStudent = async (req, res) => {
         admission_no,
         status: studentData.status || "active",
       });
-      // Create initial academic history record
+
       await StudentAcademicHistory.create({
         student_id: student.id,
         academic_year: academicYear,
@@ -244,11 +236,12 @@ const addOrUpdateStudent = async (req, res) => {
       });
     }
 
-
     req.session.success = studentId
       ? "Student updated successfully."
       : "Student added successfully.";
+
     return res.redirect("/students/student-list");
+
   } catch (error) {
     console.error("Error processing student:", error);
     req.session.error = "Server error. Please try again later.";
@@ -256,6 +249,7 @@ const addOrUpdateStudent = async (req, res) => {
     return res.redirect(redirectURL);
   }
 };
+
 
 const generateAdmissionNo = async () => {
   const lastStudent = await Student.findOne({ order: [["id", "DESC"]] });
@@ -383,7 +377,7 @@ const deleteStudent = async (req, res) => {
     if (studentData.image) {
       const imagePath = path.join(__dirname, '../../public/uploads/students', studentData.image);
       if (fs.existsSync(imagePath)) {
-        fs.unlinkSync(imagePath); // Delete the image from the file system
+        fs.unlinkSync(imagePath);
       }
     }
 

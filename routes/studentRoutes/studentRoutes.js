@@ -3,15 +3,16 @@ const router = express.Router();
 const db=require("../../models");
 const studentController = require("../../controllers/studentController/student");
 const { studentUpload }=require("../../middleware/upload.js");
+const {authMiddleware} = require("../../middleware/authMiddleware.js");
 
 const District = db.district;
 const Vdc = db.vdc;
 const Section = db.sections;
-router.get("/student-form", studentController.loadStudentForm);
-router.get("/student-list", studentController.loadStudentList);
-router.get("/count", studentController.getTotalStudents);
+router.get("/student-form",authMiddleware, studentController.loadStudentForm);
+router.get("/student-list",authMiddleware, studentController.loadStudentList);
+router.get("/count",authMiddleware, studentController.getTotalStudents);
 
-router.get("/delete-class/:id", studentController.deleteStudent);
+router.get("/delete-class/:id",authMiddleware, studentController.deleteStudent);
 router.post(
   "/api/students",
   studentUpload.single("image"),
